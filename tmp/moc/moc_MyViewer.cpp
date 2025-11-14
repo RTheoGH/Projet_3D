@@ -22,8 +22,8 @@ QT_BEGIN_MOC_NAMESPACE
 QT_WARNING_PUSH
 QT_WARNING_DISABLE_DEPRECATED
 struct qt_meta_stringdata_MyViewer_t {
-    QByteArrayData data[12];
-    char stringdata0[150];
+    QByteArrayData data[13];
+    char stringdata0[163];
 };
 #define QT_MOC_LITERAL(idx, ofs, len) \
     Q_STATIC_BYTE_ARRAY_DATA_HEADER_INITIALIZER_WITH_OFFSET(len, \
@@ -35,21 +35,22 @@ static const qt_meta_stringdata_MyViewer_t qt_meta_stringdata_MyViewer = {
 QT_MOC_LITERAL(0, 0, 8), // "MyViewer"
 QT_MOC_LITERAL(1, 9, 18), // "windowTitleUpdated"
 QT_MOC_LITERAL(2, 28, 0), // ""
-QT_MOC_LITERAL(3, 29, 9), // "open_mesh"
-QT_MOC_LITERAL(4, 39, 9), // "save_mesh"
-QT_MOC_LITERAL(5, 49, 12), // "showControls"
-QT_MOC_LITERAL(6, 62, 16), // "saveCameraInFile"
-QT_MOC_LITERAL(7, 79, 8), // "filename"
-QT_MOC_LITERAL(8, 88, 18), // "openCameraFromFile"
-QT_MOC_LITERAL(9, 107, 10), // "openCamera"
-QT_MOC_LITERAL(10, 118, 10), // "saveCamera"
-QT_MOC_LITERAL(11, 129, 20) // "saveSnapShotPlusPlus"
+QT_MOC_LITERAL(3, 29, 12), // "create_plane"
+QT_MOC_LITERAL(4, 42, 9), // "open_mesh"
+QT_MOC_LITERAL(5, 52, 9), // "save_mesh"
+QT_MOC_LITERAL(6, 62, 12), // "showControls"
+QT_MOC_LITERAL(7, 75, 16), // "saveCameraInFile"
+QT_MOC_LITERAL(8, 92, 8), // "filename"
+QT_MOC_LITERAL(9, 101, 18), // "openCameraFromFile"
+QT_MOC_LITERAL(10, 120, 10), // "openCamera"
+QT_MOC_LITERAL(11, 131, 10), // "saveCamera"
+QT_MOC_LITERAL(12, 142, 20) // "saveSnapShotPlusPlus"
 
     },
-    "MyViewer\0windowTitleUpdated\0\0open_mesh\0"
-    "save_mesh\0showControls\0saveCameraInFile\0"
-    "filename\0openCameraFromFile\0openCamera\0"
-    "saveCamera\0saveSnapShotPlusPlus"
+    "MyViewer\0windowTitleUpdated\0\0create_plane\0"
+    "open_mesh\0save_mesh\0showControls\0"
+    "saveCameraInFile\0filename\0openCameraFromFile\0"
+    "openCamera\0saveCamera\0saveSnapShotPlusPlus"
 };
 #undef QT_MOC_LITERAL
 
@@ -59,7 +60,7 @@ static const uint qt_meta_data_MyViewer[] = {
        8,       // revision
        0,       // classname
        0,    0, // classinfo
-       9,   14, // methods
+      10,   14, // methods
        0,    0, // properties
        0,    0, // enums/sets
        0,    0, // constructors
@@ -67,17 +68,18 @@ static const uint qt_meta_data_MyViewer[] = {
        1,       // signalCount
 
  // signals: name, argc, parameters, tag, flags
-       1,    1,   59,    2, 0x06 /* Public */,
+       1,    1,   64,    2, 0x06 /* Public */,
 
  // slots: name, argc, parameters, tag, flags
-       3,    0,   62,    2, 0x0a /* Public */,
-       4,    0,   63,    2, 0x0a /* Public */,
-       5,    0,   64,    2, 0x0a /* Public */,
-       6,    1,   65,    2, 0x0a /* Public */,
-       8,    1,   68,    2, 0x0a /* Public */,
-       9,    0,   71,    2, 0x0a /* Public */,
-      10,    0,   72,    2, 0x0a /* Public */,
-      11,    0,   73,    2, 0x0a /* Public */,
+       3,    0,   67,    2, 0x0a /* Public */,
+       4,    0,   68,    2, 0x0a /* Public */,
+       5,    0,   69,    2, 0x0a /* Public */,
+       6,    0,   70,    2, 0x0a /* Public */,
+       7,    1,   71,    2, 0x0a /* Public */,
+       9,    1,   74,    2, 0x0a /* Public */,
+      10,    0,   77,    2, 0x0a /* Public */,
+      11,    0,   78,    2, 0x0a /* Public */,
+      12,    0,   79,    2, 0x0a /* Public */,
 
  // signals: parameters
     QMetaType::Void, QMetaType::QString,    2,
@@ -86,8 +88,9 @@ static const uint qt_meta_data_MyViewer[] = {
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
-    QMetaType::Void, QMetaType::QString,    7,
-    QMetaType::Void, QMetaType::QString,    7,
+    QMetaType::Void,
+    QMetaType::Void, QMetaType::QString,    8,
+    QMetaType::Void, QMetaType::QString,    8,
     QMetaType::Void,
     QMetaType::Void,
     QMetaType::Void,
@@ -102,14 +105,15 @@ void MyViewer::qt_static_metacall(QObject *_o, QMetaObject::Call _c, int _id, vo
         (void)_t;
         switch (_id) {
         case 0: _t->windowTitleUpdated((*reinterpret_cast< const QString(*)>(_a[1]))); break;
-        case 1: _t->open_mesh(); break;
-        case 2: _t->save_mesh(); break;
-        case 3: _t->showControls(); break;
-        case 4: _t->saveCameraInFile((*reinterpret_cast< const QString(*)>(_a[1]))); break;
-        case 5: _t->openCameraFromFile((*reinterpret_cast< const QString(*)>(_a[1]))); break;
-        case 6: _t->openCamera(); break;
-        case 7: _t->saveCamera(); break;
-        case 8: _t->saveSnapShotPlusPlus(); break;
+        case 1: _t->create_plane(); break;
+        case 2: _t->open_mesh(); break;
+        case 3: _t->save_mesh(); break;
+        case 4: _t->showControls(); break;
+        case 5: _t->saveCameraInFile((*reinterpret_cast< const QString(*)>(_a[1]))); break;
+        case 6: _t->openCameraFromFile((*reinterpret_cast< const QString(*)>(_a[1]))); break;
+        case 7: _t->openCamera(); break;
+        case 8: _t->saveCamera(); break;
+        case 9: _t->saveSnapShotPlusPlus(); break;
         default: ;
         }
     } else if (_c == QMetaObject::IndexOfMethod) {
@@ -155,13 +159,13 @@ int MyViewer::qt_metacall(QMetaObject::Call _c, int _id, void **_a)
     if (_id < 0)
         return _id;
     if (_c == QMetaObject::InvokeMetaMethod) {
-        if (_id < 9)
+        if (_id < 10)
             qt_static_metacall(this, _c, _id, _a);
-        _id -= 9;
+        _id -= 10;
     } else if (_c == QMetaObject::RegisterMethodArgumentMetaType) {
-        if (_id < 9)
+        if (_id < 10)
             *reinterpret_cast<int*>(_a[0]) = -1;
-        _id -= 9;
+        _id -= 10;
     }
     return _id;
 }

@@ -48,7 +48,7 @@ public :
     void add_actions_to_toolBar(QToolBar *toolBar)
     {
         // Specify the actions :
-        DetailedAction * open_mesh = new DetailedAction( QIcon("./icons/open.png") , "Open Mesh" , "Open Mesh" , this , this , SLOT(open_mesh()) );
+        DetailedAction * open_mesh = new DetailedAction( QIcon("./icons/open.png") , "Open Mesh" , "Open Mesh" , this , this , SLOT(create_plane()) );
         DetailedAction * save_mesh = new DetailedAction( QIcon("./icons/save.png") , "Save model" , "Save model" , this , this , SLOT(save_mesh()) );
         DetailedAction * help = new DetailedAction( QIcon("./icons/help.png") , "HELP" , "HELP" , this , this , SLOT(help()) );
         DetailedAction * saveCamera = new DetailedAction( QIcon("./icons/camera.png") , "Save camera" , "Save camera" , this , this , SLOT(saveCamera()) );
@@ -205,6 +205,24 @@ signals:
     void windowTitleUpdated( const QString & );
 
 public slots:
+
+    void create_plane(){
+        unsigned int resolution = 32;
+        float sizeX = 10;
+        float sizeY = 10;
+        Plane new_plane = Plane(10, 10, resolution, resolution);
+        mesh.vertices = new_plane.vertices;
+        mesh.triangles = new_plane.triangles;
+        std::cout<<mesh.vertices.size()<<std::endl;
+        point3d bb(FLT_MAX,FLT_MAX,FLT_MAX) , BB(-FLT_MAX,-FLT_MAX,-FLT_MAX);
+        for( unsigned int v = 0 ; v < mesh.vertices.size() ; ++v ) {
+            bb = point3d::min(bb , mesh.vertices[v]);
+            BB = point3d::max(BB , mesh.vertices[v]);
+        }
+        adjustCamera(bb,BB);
+        update();
+    }
+
     void open_mesh() {
         bool success = false;
         QString fileName = QFileDialog::getOpenFileName(NULL,"","");
