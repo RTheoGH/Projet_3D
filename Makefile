@@ -37,7 +37,7 @@ MOVE          = mv -f
 TAR           = tar -cf
 COMPRESS      = gzip -9f
 DISTNAME      = myProject1.0.0
-DISTDIR = /home/theo/Bureau/basicQGLProject/tmp/obj/myProject1.0.0
+DISTDIR = /home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D/tmp/obj/myProject1.0.0
 LINK          = g++
 LFLAGS        = -Wl,-O1
 LIBS          = $(SUBLIBS) -Lextern/libQGLViewer-2.6.1/QGLViewer -lQGLViewer-qt5 -lglut -lGLU -lgsl -lblas -lgomp /usr/lib/x86_64-linux-gnu/libQt5OpenGL.so /usr/lib/x86_64-linux-gnu/libQt5Widgets.so /usr/lib/x86_64-linux-gnu/libQt5Gui.so /usr/lib/x86_64-linux-gnu/libQt5Xml.so /usr/lib/x86_64-linux-gnu/libQt5Core.so -lGL -lpthread   
@@ -383,7 +383,7 @@ tmp/moc/moc_MyViewer.cpp: src/MyViewer.h \
 		qt/QSmartAction.h \
 		tmp/moc/moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/theo/Bureau/basicQGLProject/tmp/moc/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/theo/Bureau/basicQGLProject -I/home/theo/Bureau/basicQGLProject -I/home/theo/Bureau/basicQGLProject/src -I/home/theo/Bureau/basicQGLProject/extern/libQGLViewer-2.6.1 -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtOpenGL -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/MyViewer.h -o tmp/moc/moc_MyViewer.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D/tmp/moc/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D -I/home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D -I/home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D/src -I/home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D/extern/libQGLViewer-2.6.1 -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtOpenGL -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtXml -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/7 -I/usr/include/x86_64-linux-gnu/c++/7 -I/usr/include/c++/7/backward -I/usr/lib/gcc/x86_64-linux-gnu/7/include -I/usr/local/include -I/usr/lib/gcc/x86_64-linux-gnu/7/include-fixed -I/usr/include/x86_64-linux-gnu -I/usr/include src/MyViewer.h -o tmp/moc/moc_MyViewer.cpp
 
 compiler_moc_objc_header_make_all:
 compiler_moc_objc_header_clean:
