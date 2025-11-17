@@ -1,13 +1,2 @@
-/build/
-extern/libQGLViewer-2.6.1/build/
-
-/.qtc_clangd/
-extern/libQGLViewer-2.6.1/.qtc_clangd/
-.qtcreator/
-extern/libQGLViewer-2.6.1/.qtcreator/
-extern/libQGLViewer-2.6.1/QGLViewer/build
-extern/libQGLViewer-2.6.1/QGLViewer/.qtc_clangd
-
-*.pro.user
-*.qmake.stash
-*.qglviewer.xml
+build
+.qtc_clangd
