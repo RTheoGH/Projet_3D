@@ -60,12 +60,13 @@
 MainWindow::MainWindow()
 {
     QMenuBar *menuBar = new QMenuBar;
-    QMenu *menuWindow = menuBar->addMenu(tr("&Window"));
+    //QMenu *menuWindow = menuBar->addMenu(tr("&Window"));
+    QMenu *menuWindow = menuBar->addMenu(QIcon(":/icons/open.png"),"");
 
-    QMenu *fileMenu = menuBar->addMenu(tr("&Fichier"));
-    QAction *loadMeshAction = new QAction(tr("Charger un maillage"), this);
-    fileMenu->addAction(loadMeshAction);
-    connect(loadMeshAction, &QAction::triggered, this, &MainWindow::loadMesh);
+    //QMenu *fileMenu = menuBar->addMenu(tr("&Fichier"));
+    //QAction *loadMeshAction = new QAction(tr("Charger un maillage"), this);
+    //fileMenu->addAction(loadMeshAction);
+    //connect(loadMeshAction, &QAction::triggered, this, &MainWindow::loadMesh);
 
     QAction *addNew = new QAction(menuWindow);
     addNew->setText(tr("Add new"));

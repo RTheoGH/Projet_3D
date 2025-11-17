@@ -84,22 +84,22 @@ Window::Window(MainWindow *mw)
     QVBoxLayout *mainLayout = new QVBoxLayout;
     QHBoxLayout *container = new QHBoxLayout;
     container->addWidget(glWidget);
-    container->addWidget(xSlider);
-    container->addWidget(ySlider);
-    container->addWidget(zSlider);
+//    container->addWidget(xSlider);
+//    container->addWidget(ySlider);
+//    container->addWidget(zSlider);
 
     QWidget *w = new QWidget;
     w->setLayout(container);
     mainLayout->addWidget(w);
-    dockBtn = new QPushButton(tr("Undock"), this);
-    connect(dockBtn, &QPushButton::clicked, this, &Window::dockUndock);
-    mainLayout->addWidget(dockBtn);
+//    dockBtn = new QPushButton(tr("Undock"), this);
+//    connect(dockBtn, &QPushButton::clicked, this, &Window::dockUndock);
+//    mainLayout->addWidget(dockBtn);
 
     setLayout(mainLayout);
 
-    xSlider->setValue(15 * 16);
-    ySlider->setValue(345 * 16);
-    zSlider->setValue(0 * 16);
+//    xSlider->setValue(15 * 16);
+//    ySlider->setValue(345 * 16);
+//    zSlider->setValue(0 * 16);
 
     setWindowTitle(tr("Qt OpenGL"));
 }
