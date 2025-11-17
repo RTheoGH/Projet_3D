@@ -144,8 +144,6 @@ void GLWidget::cleanup()
     if (m_program == nullptr)
         return;
     makeCurrent();
-    m_logoVbo.destroy();
-    m_cubeVbo.destroy();
     m_meshVbo_pos.destroy();
     m_meshVbo_norm.destroy();
     m_meshEbo.destroy();
@@ -157,35 +155,25 @@ void GLWidget::cleanup()
 
 void GLWidget::initializeGL()
 {
-    // In this example the widget's corresponding top-level window can change
-    // several times during the widget's lifetime. Whenever this happens, the
-    // QOpenGLWidget's associated context is destroyed and a new one is created.
-    // Therefore we have to be prepared to clean up the resources on the
-    // aboutToBeDestroyed() signal, instead of the destructor. The emission of
-    // the signal will be followed by an invocation of initializeGL() where we
-    // can recreate all resources.
     connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &GLWidget::cleanup);
 
     initializeOpenGLFunctions();
-    glClearColor(0, 0, 0, m_transparent ? 0 : 1);
+//    glClearColor(0, 0, 0, m_transparent ? 0 : 1);
+    glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
 
     m_program = new QOpenGLShaderProgram;
-    // Compile vertex shader
     if (!m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/vshader.glsl"))
         close();
 
-    // Compile fragment shader
     if (!m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/fshader.glsl"))
         close();
 
     m_program->bindAttributeLocation("vertex", 0);
     m_program->bindAttributeLocation("normal", 1);
 
-    // Link shader pipeline
     if (!m_program->link())
         close();
 
-    // Bind shader pipeline for use
     if (!m_program->bind())
         close();
 
@@ -193,26 +181,16 @@ void GLWidget::initializeGL()
     m_normal_matrix_loc = m_program->uniformLocation("normal_matrix");
     m_light_pos_loc = m_program->uniformLocation("light_position");
 
-    // Create a vertex array object. In OpenGL ES 2.0 and OpenGL 2.x
-    // implementations this is optional and support may not be present
-    // at all. Nonetheless the below code works in all cases and makes
-    // sure there is a VAO when one is needed.
     m_vao.create();
     QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
 
-    // Setup our vertex buffer object.
-    // m_logoVbo.create();
-    // m_logoVbo.bind();
-    // m_logoVbo.allocate(m_logo.constData(), m_logo.count() * sizeof(GLfloat));
-
-    // Store the vertex attribute bindings for the program.
     setupVertexAttribs();
 
     // --- Mesh buffers initialisation ---
 
     m_meshVbo_pos.create();
     m_meshVbo_pos.bind();
-    m_meshVbo_pos.allocate(0);     // vide pour le moment
+    m_meshVbo_pos.allocate(0);
     m_meshVbo_pos.release();
 
     m_meshVbo_norm.create();
@@ -225,23 +203,10 @@ void GLWidget::initializeGL()
     m_meshEbo.allocate(0);
     m_meshEbo.release();
 
-
-    // m_cubeVbo.create();
-    // m_cubeVbo.bind();
-    // m_cubeVbo.allocate(m_cube.data(), m_cube.count() * sizeof(GLfloat));
-
-    // QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-    // f->glEnableVertexAttribArray(0);
-    // f->glEnableVertexAttribArray(1);
-    // f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 6*sizeof(GLfloat), nullptr);
-    // f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 6*sizeof(GLfloat), reinterpret_cast<void*>(3*sizeof(GLfloat)));
-    // m_cubeVbo.release();
-
-    // Our camera never changes in this example.
     m_view.setToIdentity();
-    m_view.translate(0, 0, -3);
+    m_view.setToIdentity();
+    m_view.translate(0,0,m_zoom);
 
-    // Light position is fixed.
     m_program->setUniformValue(m_light_pos_loc, QVector3D(0, 0, 70));
 
     m_program->release();
@@ -249,7 +214,6 @@ void GLWidget::initializeGL()
 
 void GLWidget::setupVertexAttribs()
 {
-    // VAO doit être activé
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
     // Positions
@@ -290,7 +254,7 @@ void GLWidget::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
-    glEnable(GL_CULL_FACE);
+    //glEnable(GL_CULL_FACE);
 
     m_model.setToIdentity();
     m_model.rotate(180.0f - (m_xRot / 16.0f), 1, 0, 0);
@@ -301,6 +265,8 @@ void GLWidget::paintGL()
     m_program->bind();
 
     // Set modelview-projection matrix
+    m_view.setToIdentity();
+    m_view.translate(m_tx,m_ty,m_zoom);
     m_program->setUniformValue(m_mvp_matrix_loc, m_projection * m_view * m_model);
     QMatrix3x3 normal_matrix = m_model.normalMatrix();
 
@@ -357,10 +323,18 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         setXRotation(m_xRot + 8 * dy);
         setYRotation(m_yRot + 8 * dx);
     } else if (event->buttons() & Qt::RightButton) {
-        setXRotation(m_xRot + 8 * dy);
-        setZRotation(m_zRot + 8 * dx);
+//        setXRotation(m_xRot + 8 * dy);
+//        setZRotation(m_zRot + 8 * dx);
+        m_tx += dx * 0.01f;
+        m_ty -= dy * 0.01f;
+        update();
     }
     m_last_position = event->pos();
+}
+
+void GLWidget::wheelEvent(QWheelEvent *event){
+    m_zoom += event->angleDelta().y() * 0.001f;
+    update();
 }
 
 void GLWidget::setMesh(const Mesh &mesh)

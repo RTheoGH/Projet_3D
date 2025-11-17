@@ -5,12 +5,13 @@
 #include <QVector3D>
 #include <QVector2D>
 #include <QOpenGLFunctions>
+#include <QString>
 
 class Maillage
 {
 public:
     explicit Maillage() : m_count(0) {};
-    explicit Maillage(const QString &fileName);
+    explicit Maillage(const QString &fileName) { loadOFF(fileName); }
 
     const GLfloat* data() const { return m_data.constData(); }
     int count() const { return m_count; }
@@ -39,40 +40,57 @@ public:
     QVector<QVector2D> uv_list;
 
     bool valid = false;
+
+    void computeNormals(); // calcule les normales par sommet
 };
 
-class Plane : public Mesh{
+class Plane : public Mesh
+{
 public:
-    float sizeX;
-    float sizeY;
-    unsigned int resolutionX;
-    unsigned int resolutionY;
+    Plane(float sizeX = 10, float sizeY = 10, unsigned int resolutionX = 32, unsigned int resolutionY = 32)
+    {
+        vertices.clear();
+        normals.clear();
+        uv_list.clear();
+        triangles.clear();
 
-    Plane(float sizeX = 10, float sizeY = 10, unsigned int resolutionX = 32, unsigned int resolutionY = 32){
-        for(unsigned int i = 0; i<resolutionX; i++){
-            for(unsigned int j = 0; j<resolutionY; j++){
-                vertices.push_back(QVector3D(((float)i/(resolutionX-1)-0.5)*sizeX, 0, ((float)j/(resolutionY-1)-0.5)*sizeY));
-                normals.push_back(QVector3D(0.0, 1.0, 0.0));
+        // Création des vertices et UVs
+        for(unsigned int i = 0; i < resolutionX; i++){
+            for(unsigned int j = 0; j < resolutionY; j++){
+                float x = ((float)i/(resolutionX-1) - 0.5f) * sizeX;
+                float y = 0.0f;
+                float z = ((float)j/(resolutionY-1) - 0.5f) * sizeY;
+                vertices.push_back(QVector3D(x, y, z));
+                normals.push_back(QVector3D(0.0f, 1.0f, 0.0f));
 
-                float u = (float)i / (float) resolutionX-1;
-                float v = (float)j / (float) resolutionY-1;
+                float u = (float)i / (resolutionX-1);
+                float v = (float)j / (resolutionY-1);
                 uv_list.push_back(QVector2D(u, v));
             }
         }
-        for(unsigned int i = 0; i<resolutionX; i++){
-            for(unsigned int j = 0; j<resolutionY; j++){
-                if(i<resolutionX-1 && j<resolutionY-1){
-                    unsigned int voisin_haut = (i+1)*resolutionY+j;
-                    unsigned int voisin_droite = i*resolutionY+j+1;
-                    unsigned int voisin_haut_droite = (i+1)*resolutionY+j+1;
 
-                    triangles.push_back(i); triangles.push_back(voisin_droite); triangles.push_back(voisin_haut_droite);
-                    triangles.push_back(i); triangles.push_back(voisin_haut); triangles.push_back(voisin_haut_droite);
-                }
+        // Création des triangles
+        for(unsigned int i = 0; i < resolutionX-1; i++){
+            for(unsigned int j = 0; j < resolutionY-1; j++){
+                unsigned int idx0 = i * resolutionY + j;
+                unsigned int idx1 = (i+1) * resolutionY + j;
+                unsigned int idx2 = i * resolutionY + (j+1);
+                unsigned int idx3 = (i+1) * resolutionY + (j+1);
+
+                // Triangle 1
+                triangles.push_back(idx0);
+                triangles.push_back(idx2);
+                triangles.push_back(idx3);
+
+                // Triangle 2
+                triangles.push_back(idx0);
+                triangles.push_back(idx3);
+                triangles.push_back(idx1);
             }
         }
+
+        valid = true;
     }
 };
-
 
 #endif

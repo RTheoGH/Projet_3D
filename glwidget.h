@@ -56,8 +56,6 @@
 #include <QOpenGLVertexArrayObject>
 #include <QOpenGLBuffer>
 #include <QMatrix4x4>
-#include "logo.h"
-#include "cube.h"
 #include "maillage.h"
 
 QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
@@ -100,6 +98,7 @@ protected:
     void resizeGL(int width, int height) override;
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
+    void wheelEvent(QWheelEvent *event) override;
 
 private:
     void setupVertexAttribs();
@@ -109,11 +108,7 @@ private:
     int m_yRot;
     int m_zRot;
     QPoint m_last_position;
-    Cube m_cube;
-    QOpenGLBuffer m_cubeVbo{QOpenGLBuffer::VertexBuffer};
-    Logo m_logo;
     QOpenGLVertexArrayObject m_vao;
-    QOpenGLBuffer m_logoVbo;
     QOpenGLShaderProgram *m_program;
     int m_mvp_matrix_loc;
     int m_normal_matrix_loc;
@@ -131,6 +126,10 @@ private:
 
     bool m_meshLoaded = false;
     int m_indexCount = 0;
+
+    float m_tx = 0.0f;
+    float m_ty = 0.0f;
+    float m_zoom = -3.0f;
 
 };
 

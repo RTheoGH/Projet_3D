@@ -4,20 +4,17 @@ OBJECTS_DIR = ./obj
 INCLUDEPATH += $$PWD
 
 HEADERS       = glwidget.h \
-                cube.h \
                 maillage.h \
                 window.h \
-                mainwindow.h \
-                logo.h
+                mainwindow.h
 SOURCES       = glwidget.cpp \
-                cube.cpp \
                 maillage.cpp \
                 main.cpp \
                 window.cpp \
-                mainwindow.cpp \
-                logo.cpp
+                mainwindow.cpp
 
 RESOURCES += \
+    resources.qrc \
     shaders.qrc
 
 QT           += widgets
