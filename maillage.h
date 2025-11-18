@@ -8,6 +8,7 @@
 #include <QString>
 #include <QOpenGLVertexArrayObject>
 #include <QOpenGLBuffer>
+#include <memory>
 
 class Maillage
 {
@@ -31,8 +32,8 @@ private:
 class Mesh
 {
 public:
-    Mesh(){ bindBuffers(); };
-    explicit Mesh(const QString &fileName) { loadOFF(fileName); }
+    Mesh() = default;
+    explicit Mesh(const QString &fileName) { loadOFF(fileName); } // ne bind pas ici
 
     bool loadOFF(const QString &fileName);
 
@@ -41,13 +42,14 @@ public:
     QVector<unsigned int> triangles;
     QVector<QVector2D> uv_list;
 
-    QOpenGLVertexArrayObject vao;
-    QOpenGLBuffer vbo_pos;
-    QOpenGLBuffer vbo_norm;
-    QOpenGLBuffer ebo;
-    QOpenGLBuffer uv_buffer;
+    std::unique_ptr<QOpenGLVertexArrayObject> vao;
+    std::unique_ptr<QOpenGLBuffer> vbo_pos;
+    std::unique_ptr<QOpenGLBuffer> vbo_norm;
+    std::unique_ptr<QOpenGLBuffer> ebo;
+    std::unique_ptr<QOpenGLBuffer> uv_buffer;
 
     bool valid = false;
+    bool gpu_uploaded = false;
 
     void bindBuffers();
     void computeNormals();

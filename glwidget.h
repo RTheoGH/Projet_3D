@@ -57,6 +57,8 @@
 #include <QOpenGLBuffer>
 #include <QMatrix4x4>
 #include "maillage.h"
+#include <memory>
+#include <vector>
 
 QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
 
@@ -71,7 +73,7 @@ public:
     static bool isTransparent() { return m_transparent; }
     static void setTransparent(bool t) { m_transparent = t; }
 
-    void setMesh(const Mesh &m);
+    void addMesh(std::unique_ptr<Mesh> mesh);
 
     QSize minimumSizeHint() const override;
     QSize sizeHint() const override;
@@ -93,7 +95,7 @@ signals:
 
 protected:
     void initializeGL() override;
-    void uploadMeshToGPU(const Mesh& m);
+    void uploadMeshToGPU(Mesh& m);
     void paintGL() override;
     void resizeGL(int width, int height) override;
     void mousePressEvent(QMouseEvent *event) override;
@@ -101,7 +103,7 @@ protected:
     void wheelEvent(QWheelEvent *event) override;
 
 private:
-    void setupVertexAttribs();
+    // void setupVertexAttribs();
 
     bool m_core;
     int m_xRot;
@@ -118,12 +120,7 @@ private:
     QMatrix4x4 m_model;
     static bool m_transparent;
 
-    Mesh m_mesh;
-
-
-
-    bool m_meshLoaded = false;
-    int m_indexCount = 0;
+    std::vector<std::unique_ptr<Mesh>> scene_meshes;
 
     float m_tx = 0.0f;
     float m_ty = 0.0f;

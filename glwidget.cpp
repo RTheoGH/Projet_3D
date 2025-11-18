@@ -141,25 +141,34 @@ void GLWidget::setZRotation(int angle)
 
 void GLWidget::cleanup()
 {
-    if (m_program == nullptr)
-        return;
     makeCurrent();
-    m_meshVbo_pos.destroy();
-    m_meshVbo_norm.destroy();
-    m_meshEbo.destroy();
-
-    delete m_program;
-    m_program = 0;
+    // Option 1 : laisser unique_ptr faire le boulot, mais certains wrappers veulent destroy()
+    for (auto &mptr : scene_meshes) {
+        if (!mptr) continue;
+        if (mptr->vao) mptr->vao->destroy();
+        if (mptr->vbo_pos) mptr->vbo_pos->destroy();
+        if (mptr->vbo_norm) mptr->vbo_norm->destroy();
+        if (mptr->ebo) mptr->ebo->destroy();
+        if (mptr->uv_buffer) mptr->uv_buffer->destroy();
+    }
+    scene_meshes.clear();
     doneCurrent();
+
+    if (m_program) { delete m_program; m_program = nullptr; }
 }
+
+
 
 void GLWidget::initializeGL()
 {
     connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &GLWidget::cleanup);
 
+
     initializeOpenGLFunctions();
 //    glClearColor(0, 0, 0, m_transparent ? 0 : 1);
     glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
+
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
     m_program = new QOpenGLShaderProgram;
     if (!m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/vshader.glsl"))
@@ -184,24 +193,6 @@ void GLWidget::initializeGL()
     m_vao.create();
     QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
 
-    setupVertexAttribs();
-
-    // --- Mesh buffers initialisation ---
-
-    m_meshVbo_pos.create();
-    m_meshVbo_pos.bind();
-    m_meshVbo_pos.allocate(0);
-    m_meshVbo_pos.release();
-
-    m_meshVbo_norm.create();
-    m_meshVbo_norm.bind();
-    m_meshVbo_norm.allocate(0);
-    m_meshVbo_norm.release();
-
-    m_meshEbo.create();
-    m_meshEbo.bind();
-    m_meshEbo.allocate(0);
-    m_meshEbo.release();
 
     m_view.setToIdentity();
     m_view.setToIdentity();
@@ -212,96 +203,40 @@ void GLWidget::initializeGL()
     m_program->release();
 }
 
-void GLWidget::setupVertexAttribs()
-{
-    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-
-    // Positions
-    m_meshVbo_pos.bind();
-    f->glEnableVertexAttribArray(0);
-    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    m_meshVbo_pos.release();
-
-    // Normales
-    m_meshVbo_norm.bind();
-    f->glEnableVertexAttribArray(1);
-    f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
-    m_meshVbo_norm.release();
-
-}
-
-void GLWidget::uploadMeshToGPU(const Mesh& m)
-{
-    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-
-    m_meshVbo_pos.bind();
-    m_meshVbo_pos.allocate(m.vertices.data(), m.vertices.size() * sizeof(QVector3D));
-    m_meshVbo_pos.release();
-
-    m_meshVbo_norm.bind();
-    m_meshVbo_norm.allocate(m.normals.data(), m.normals.size() * sizeof(QVector3D));
-    m_meshVbo_norm.release();
-
-    m_meshEbo.bind();
-    m_meshEbo.allocate(m.triangles.data(), m.triangles.size() * sizeof(unsigned int));
-    m_meshEbo.release();
-
-    m_indexCount = m.triangles.size();
-}
+// void GLWidget::uploadMeshToGPU(Mesh& m)
+// {
+//     makeCurrent();
+//     m.bindBuffers();
+// }
 
 
 void GLWidget::paintGL()
 {
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
-    //glEnable(GL_CULL_FACE);
 
+    m_program->bind();
     m_model.setToIdentity();
     m_model.rotate(180.0f - (m_xRot / 16.0f), 1, 0, 0);
     m_model.rotate(m_yRot / 16.0f, 0, 1, 0);
     m_model.rotate(m_zRot / 16.0f, 0, 0, 1);
 
-    QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
     m_program->bind();
-
-    // Set modelview-projection matrix
     m_view.setToIdentity();
-    m_view.translate(m_tx,m_ty,m_zoom);
+    m_view.translate(m_tx, m_ty, m_zoom);
     m_program->setUniformValue(m_mvp_matrix_loc, m_projection * m_view * m_model);
-    QMatrix3x3 normal_matrix = m_model.normalMatrix();
+    m_program->setUniformValue(m_normal_matrix_loc, m_model.normalMatrix());
 
-    // Set normal matrix
-    m_program->setUniformValue(m_normal_matrix_loc, normal_matrix);
-
-    //glDrawArrays(GL_TRIANGLES, 0, m_logo.vertexCount());
-    //glDrawArrays(GL_TRIANGLES, 0, m_cube.vertexCount());
-    if (!m_meshLoaded) {
-        Plane p;
-        uploadMeshToGPU(p);
-
+    // --- Dessiner tous les meshes ---
+    for (auto &mptr : scene_meshes) {
+        if (!mptr || !mptr->gpu_uploaded) continue;
+        QOpenGLVertexArrayObject::Binder vaoBinder(mptr->vao.get());
+        glDrawElements(GL_TRIANGLES, mptr->triangles.size(), GL_UNSIGNED_INT, nullptr);
     }
-
-    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-
-    // Active les attributs vertex
-    m_meshVbo_pos.bind();
-    f->glEnableVertexAttribArray(0);
-    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, sizeof(QVector3D), nullptr);
-
-    m_meshVbo_norm.bind();
-    f->glEnableVertexAttribArray(1);
-    f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, sizeof(QVector3D), nullptr);
-
-    m_meshEbo.bind();
-    glDrawElements(GL_TRIANGLES, m_indexCount, GL_UNSIGNED_INT, nullptr);
-
-    m_meshVbo_pos.release();
-    m_meshVbo_norm.release();
-    m_meshEbo.release();
-
 
     m_program->release();
 }
+
 
 void GLWidget::resizeGL(int w, int h)
 {
@@ -337,39 +272,16 @@ void GLWidget::wheelEvent(QWheelEvent *event){
     update();
 }
 
-void GLWidget::setMesh(const Mesh &mesh)
+void GLWidget::addMesh(std::unique_ptr<Mesh> mesh)
 {
-    if (!mesh.valid) return;
+    if (!mesh || !mesh->valid) return;
 
     makeCurrent();
-    m_mesh = mesh;
-
-    // 1) VBO positions
-    if (!m_meshVbo_pos.isCreated())
-        m_meshVbo_pos.create();
-    m_meshVbo_pos.bind();
-    m_meshVbo_pos.allocate(mesh.vertices.constData(),
-                           mesh.vertices.size() * sizeof(QVector3D));
-    m_meshVbo_pos.release();
-
-    // 2) VBO normales
-    if (!m_meshVbo_norm.isCreated())
-        m_meshVbo_norm.create();
-    m_meshVbo_norm.bind();
-    m_meshVbo_norm.allocate(mesh.normals.constData(),
-                            mesh.normals.size() * sizeof(QVector3D));
-    m_meshVbo_norm.release();
-
-    // 3) EBO indices
-    if (!m_meshEbo.isCreated())
-        m_meshEbo.create();
-    m_meshEbo.bind();
-    m_meshEbo.allocate(mesh.triangles.constData(),
-                       mesh.triangles.size() * sizeof(unsigned int));
-    m_meshEbo.release();
-
-    m_indexCount = mesh.triangles.size();
-    m_meshLoaded = true;
+    initializeOpenGLFunctions();
+    // mesh->computeNormals();
+    mesh->bindBuffers();
+    scene_meshes.push_back(std::move(mesh));
+    doneCurrent();
     update();
 }
 

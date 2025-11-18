@@ -71,7 +71,7 @@ MainWindow::MainWindow()
     QAction *addNew = new QAction(menuWindow);
     addNew->setText(tr("Add new"));
     menuWindow->addAction(addNew);
-    connect(addNew, &QAction::triggered, this, &MainWindow::onAddNew);
+    connect(addNew, &QAction::triggered, this, &MainWindow::loadMesh);
     setMenuBar(menuBar);
 
     onAddNew();
@@ -87,24 +87,26 @@ void MainWindow::onAddNew()
 
 void MainWindow::loadMesh()
 {
-    QString fileName = QFileDialog::getOpenFileName(
-        this,
-        tr("Ouvrir un maillage"),
-        "",
-        tr("OFF Files (*.off);;All Files (*)")
-    );
-    if (fileName.isEmpty())
-        return;
+    // QString fileName = QFileDialog::getOpenFileName(
+    //     this,
+    //     tr("Ouvrir un maillage"),
+    //     "",
+    //     tr("OFF Files (*.off);;All Files (*)")
+    // );
+    // if (fileName.isEmpty())
+    //     return;
 
     Window *w = qobject_cast<Window*>(centralWidget());
     if (!w)
         return;
 
-    Mesh m;
-    if (!m.loadOFF(fileName)) {
-        QMessageBox::warning(this, tr("Erreur"), tr("Impossible de charger le maillage."));
-        return;
-    }
+    // Mesh m;
+    // if (!m.loadOFF(fileName)) {
+    //     QMessageBox::warning(this, tr("Erreur"), tr("Impossible de charger le maillage."));
+    //     return;
+    // }
 
-    w->get_glWidget()->setMesh(m);
+    auto p = std::make_unique<Plane>(10, 10, 32, 32);
+
+    w->get_glWidget()->addMesh(std::move(p));
 }

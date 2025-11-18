@@ -104,45 +104,59 @@ bool Mesh::loadOFF(const QString &fileName)
 
 void Mesh::bindBuffers()
 {
+    if (gpu_uploaded) return;
+    // Assure-toi d'appeler initializeOpenGLFunctions() dans le GLWidget avant d'appeler bindBuffers()
+
+    // create wrappers
+    if (!vao) vao = std::make_unique<QOpenGLVertexArrayObject>();
+    if (!vbo_pos) vbo_pos = std::make_unique<QOpenGLBuffer>(QOpenGLBuffer::VertexBuffer);
+    if (!vbo_norm) vbo_norm = std::make_unique<QOpenGLBuffer>(QOpenGLBuffer::VertexBuffer);
+    if (!ebo) ebo = std::make_unique<QOpenGLBuffer>(QOpenGLBuffer::IndexBuffer);
+    if (!uv_buffer) uv_buffer = std::make_unique<QOpenGLBuffer>(QOpenGLBuffer::VertexBuffer);
 
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
-    vao.create();
-    vao.bind();
+    vao->create();
+    QOpenGLVertexArrayObject::Binder vaoBinder(vao.get());
 
-    // --- Positions ---
-    vbo_pos.create();
-    vbo_pos.bind();
-    vbo_pos.allocate(vertices.constData(), vertices.size() * sizeof(QVector3D));
-    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    // positions
+    vbo_pos->create();
+    vbo_pos->bind();
+    vbo_pos->allocate(vertices.constData(), vertices.size() * sizeof(QVector3D));
     f->glEnableVertexAttribArray(0);
-    vbo_pos.release();
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    vbo_pos->release();
 
-    // --- Normals ---
+    // normals (si présentes)
     if (!normals.isEmpty()) {
-        vbo_norm.create();
-        vbo_norm.bind();
-        vbo_norm.allocate(normals.constData(), normals.size() * sizeof(QVector3D));
-        f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+        vbo_norm->create();
+        vbo_norm->bind();
+        vbo_norm->allocate(normals.constData(), normals.size() * sizeof(QVector3D));
         f->glEnableVertexAttribArray(1);
-        vbo_norm.release();
+        f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+        vbo_norm->release();
     }
 
-    // --- UV ---
+    // uvs
     if (!uv_list.isEmpty()) {
-        uv_buffer.create();
-        uv_buffer.bind();
-        uv_buffer.allocate(uv_list.constData(), uv_list.size() * sizeof(QVector2D));
-        f->glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+        uv_buffer->create();
+        uv_buffer->bind();
+        uv_buffer->allocate(uv_list.constData(), uv_list.size() * sizeof(QVector2D));
         f->glEnableVertexAttribArray(2);
-        uv_buffer.release();
+        f->glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+        uv_buffer->release();
     }
 
-    // --- EBO ---
-    ebo.create();
-    ebo.bind();
-    ebo.allocate(triangles.constData(), triangles.size() * sizeof(unsigned int));
+    // indices
+    ebo->create();
+    ebo->bind();
+    ebo->allocate(triangles.constData(), triangles.size() * sizeof(unsigned int));
+    // No release of EBO while VAO bound — fine to release if you prefer
+    ebo->release();
 
-    vao.release();
+    vao->release();
+
+    gpu_uploaded = true;
 }
+
 
