@@ -7,5 +7,6 @@
         <file>icons/open_camera.png</file>
         <file>icons/save.png</file>
         <file>icons/save_snapshot.png</file>
+        <file>icons/open_file.png</file>
     </qresource>
 </RCC>

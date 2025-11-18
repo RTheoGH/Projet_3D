@@ -5,11 +5,13 @@ INCLUDEPATH += $$PWD
 
 HEADERS       = glwidget.h \
                 maillage.h \
+                meshDialog.h \
                 window.h \
                 mainwindow.h
 SOURCES       = glwidget.cpp \
                 maillage.cpp \
                 main.cpp \
+                meshDialog.cpp \
                 window.cpp \
                 mainwindow.cpp
 
