@@ -56,22 +56,28 @@
 #include <QFileDialog>
 #include "glwidget.h"
 #include "maillage.h"
+#include "meshdialog.h"
 
 MainWindow::MainWindow()
 {
     QMenuBar *menuBar = new QMenuBar;
     //QMenu *menuWindow = menuBar->addMenu(tr("&Window"));
-    QMenu *menuWindow = menuBar->addMenu(QIcon(":/icons/open.png"),"");
+    //QMenu *menuWindow = menuBar->addMenu(QIcon(":/icons/open.png"),"");
+
 
     //QMenu *fileMenu = menuBar->addMenu(tr("&Fichier"));
     //QAction *loadMeshAction = new QAction(tr("Charger un maillage"), this);
     //fileMenu->addAction(loadMeshAction);
     //connect(loadMeshAction, &QAction::triggered, this, &MainWindow::loadMesh);
 
-    QAction *addNew = new QAction(menuWindow);
-    addNew->setText(tr("Add new"));
-    menuWindow->addAction(addNew);
-    connect(addNew, &QAction::triggered, this, &MainWindow::loadMesh);
+    QAction *newMeshAction = new QAction(QIcon(":/icons/open.png"), tr("Nouveau maillage"), this);
+    menuBar->addAction(newMeshAction);
+    connect(newMeshAction, &QAction::triggered, this, &MainWindow::openMeshDialog);
+
+    QAction *openFileAction = new QAction(QIcon(":/icons/open_file.png"), tr("Ouvrir..."), this);
+    menuBar->addAction(openFileAction);
+    connect(openFileAction, &QAction::triggered, this, &MainWindow::loadMesh);
+
     setMenuBar(menuBar);
 
     onAddNew();
@@ -109,4 +115,20 @@ void MainWindow::loadMesh()
     auto p = std::make_unique<Plane>(10, 10, 32, 32);
 
     w->get_glWidget()->addMesh(std::move(p));
+}
+
+void MainWindow::openMeshDialog()
+{
+    MeshDialog dlg(this);
+
+    if (dlg.exec() == QDialog::Accepted) {
+        int size = dlg.meshSize();
+
+        Window *w = qobject_cast<Window*>(centralWidget());
+        if (!w)
+            return;
+
+        auto p = std::make_unique<Plane>(10, 10, size, size);
+        w->get_glWidget()->addMesh(std::move(p));
+    }
 }
