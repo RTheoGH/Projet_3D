@@ -171,14 +171,15 @@ void GLWidget::initializeGL()
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
     m_program = new QOpenGLShaderProgram;
-    if (!m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/vshader.glsl"))
+    if (!m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/vshader.glsl"))
         close();
 
-    if (!m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/fshader.glsl"))
+    if (!m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/fshader.glsl"))
         close();
 
     m_program->bindAttributeLocation("vertex", 0);
     m_program->bindAttributeLocation("normal", 1);
+    m_program->bindAttributeLocation("uv", 2);
 
     if (!m_program->link())
         close();
@@ -229,6 +230,13 @@ void GLWidget::paintGL()
 
     for (auto &mptr : scene_meshes) {
         if (!mptr || !mptr->gpu_uploaded) continue;
+
+        if (mptr->has_heightmap) {
+            glActiveTexture(GL_TEXTURE0);
+            mptr->heightmap->bind();
+            m_program->setUniformValue("heightmap", 0);
+        }
+
         QOpenGLVertexArrayObject::Binder vaoBinder(mptr->vao.get());
         glDrawElements(GL_TRIANGLES, mptr->triangles.size(), GL_UNSIGNED_INT, nullptr);
     }

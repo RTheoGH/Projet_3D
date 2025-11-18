@@ -120,6 +120,8 @@ private:
     QMatrix4x4 m_model;
     static bool m_transparent;
 
+    GLint textureUniform = -1;
+
     std::vector<std::unique_ptr<Mesh>> scene_meshes;
 
     float m_tx = 0.0f;

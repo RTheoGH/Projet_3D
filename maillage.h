@@ -8,6 +8,7 @@
 #include <QString>
 #include <QOpenGLVertexArrayObject>
 #include <QOpenGLBuffer>
+#include <QOpenGLTexture>
 #include <memory>
 
 class Maillage
@@ -33,7 +34,7 @@ class Mesh
 {
 public:
     Mesh() = default;
-    explicit Mesh(const QString &fileName) { loadOFF(fileName); } // ne bind pas ici
+    explicit Mesh(const QString &fileName) { loadOFF(fileName); }
 
     bool loadOFF(const QString &fileName);
 
@@ -48,8 +49,11 @@ public:
     std::unique_ptr<QOpenGLBuffer> ebo;
     std::unique_ptr<QOpenGLBuffer> uv_buffer;
 
+    QOpenGLTexture *heightmap;
+
     bool valid = false;
     bool gpu_uploaded = false;
+    bool has_heightmap = false;
 
     void bindBuffers();
     void computeNormals();
@@ -58,6 +62,9 @@ public:
 class Plane : public Mesh
 {
 public:
+
+    bool has_heightmap = true;
+
     Plane(float sizeX = 10, float sizeY = 10, unsigned int resolutionX = 32, unsigned int resolutionY = 32)
     {
         vertices.clear();
@@ -102,6 +109,9 @@ public:
 
         valid = true;
         // bindBuffers();
+
+        heightmap = new QOpenGLTexture(QImage(":/textures/heightmap.png"));
+        heightmap->setMagnificationFilter(QOpenGLTexture::Linear);
 
     }
 };

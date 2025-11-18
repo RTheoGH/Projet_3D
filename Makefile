@@ -55,20 +55,24 @@ OBJECTS_DIR   = obj/
 SOURCES       = glwidget.cpp \
 		maillage.cpp \
 		main.cpp \
+		meshdialog.cpp \
 		window.cpp \
 		mainwindow.cpp qrc_resources.cpp \
 		qrc_shaders.cpp \
 		moc/moc_glwidget.cpp \
+		moc/moc_meshdialog.cpp \
 		moc/moc_window.cpp \
 		moc/moc_mainwindow.cpp
 OBJECTS       = obj/glwidget.o \
 		obj/maillage.o \
 		obj/main.o \
+		obj/meshdialog.o \
 		obj/window.o \
 		obj/mainwindow.o \
 		obj/qrc_resources.o \
 		obj/qrc_shaders.o \
 		obj/moc_glwidget.o \
+		obj/moc_meshdialog.o \
 		obj/moc_window.o \
 		obj/moc_mainwindow.o
 DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
@@ -151,10 +155,12 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/lex.prf \
 		TP1.pro glwidget.h \
 		maillage.h \
+		meshdialog.h \
 		window.h \
 		mainwindow.h glwidget.cpp \
 		maillage.cpp \
 		main.cpp \
+		meshdialog.cpp \
 		window.cpp \
 		mainwindow.cpp
 QMAKE_TARGET  = TP1
@@ -347,8 +353,8 @@ distdir: FORCE
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
 	$(COPY_FILE) --parents resources.qrc shaders.qrc $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents glwidget.h maillage.h window.h mainwindow.h $(DISTDIR)/
-	$(COPY_FILE) --parents glwidget.cpp maillage.cpp main.cpp window.cpp mainwindow.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents glwidget.h maillage.h meshdialog.h window.h mainwindow.h $(DISTDIR)/
+	$(COPY_FILE) --parents glwidget.cpp maillage.cpp main.cpp meshdialog.cpp window.cpp mainwindow.cpp $(DISTDIR)/
 
 
 clean: compiler_clean 
@@ -378,6 +384,7 @@ compiler_rcc_clean:
 qrc_resources.cpp: resources.qrc \
 		/usr/lib/qt5/bin/rcc \
 		icons/save.png \
+		icons/open_file.png \
 		icons/camera.png \
 		icons/open.png \
 		icons/help.png \
@@ -388,8 +395,8 @@ qrc_resources.cpp: resources.qrc \
 
 qrc_shaders.cpp: shaders.qrc \
 		/usr/lib/qt5/bin/rcc \
-		vshader.glsl \
-		fshader.glsl
+		shaders/vshader.glsl \
+		shaders/fshader.glsl
 	/usr/lib/qt5/bin/rcc -name shaders shaders.qrc -o qrc_shaders.cpp
 
 compiler_moc_predefs_make_all: moc/moc_predefs.h
@@ -398,14 +405,19 @@ compiler_moc_predefs_clean:
 moc/moc_predefs.h: /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
 	g++ -pipe -g -Wall -Wextra -dM -E -o moc/moc_predefs.h /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp
 
-compiler_moc_header_make_all: moc/moc_glwidget.cpp moc/moc_window.cpp moc/moc_mainwindow.cpp
+compiler_moc_header_make_all: moc/moc_glwidget.cpp moc/moc_meshdialog.cpp moc/moc_window.cpp moc/moc_mainwindow.cpp
 compiler_moc_header_clean:
-	-$(DEL_FILE) moc/moc_glwidget.cpp moc/moc_window.cpp moc/moc_mainwindow.cpp
+	-$(DEL_FILE) moc/moc_glwidget.cpp moc/moc_meshdialog.cpp moc/moc_window.cpp moc/moc_mainwindow.cpp
 moc/moc_glwidget.cpp: glwidget.h \
 		maillage.h \
 		moc/moc_predefs.h \
 		/usr/lib/qt5/bin/moc
 	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D/moc/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D -I/home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/9 -I/usr/include/x86_64-linux-gnu/c++/9 -I/usr/include/c++/9/backward -I/usr/lib/gcc/x86_64-linux-gnu/9/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include glwidget.h -o moc/moc_glwidget.cpp
+
+moc/moc_meshdialog.cpp: meshdialog.h \
+		moc/moc_predefs.h \
+		/usr/lib/qt5/bin/moc
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D/moc/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D -I/home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/9 -I/usr/include/x86_64-linux-gnu/c++/9 -I/usr/include/c++/9/backward -I/usr/lib/gcc/x86_64-linux-gnu/9/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include meshdialog.h -o moc/moc_meshdialog.cpp
 
 moc/moc_window.cpp: window.h \
 		moc/moc_predefs.h \
@@ -445,6 +457,9 @@ obj/main.o: main.cpp glwidget.h \
 		mainwindow.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/main.o main.cpp
 
+obj/meshdialog.o: meshdialog.cpp meshdialog.h
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/meshdialog.o meshdialog.cpp
+
 obj/window.o: window.cpp glwidget.h \
 		maillage.h \
 		window.h \
@@ -454,7 +469,8 @@ obj/window.o: window.cpp glwidget.h \
 obj/mainwindow.o: mainwindow.cpp mainwindow.h \
 		window.h \
 		glwidget.h \
-		maillage.h
+		maillage.h \
+		meshdialog.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/mainwindow.o mainwindow.cpp
 
 obj/qrc_resources.o: qrc_resources.cpp 
@@ -465,6 +481,9 @@ obj/qrc_shaders.o: qrc_shaders.cpp
 
 obj/moc_glwidget.o: moc/moc_glwidget.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/moc_glwidget.o moc/moc_glwidget.cpp
+
+obj/moc_meshdialog.o: moc/moc_meshdialog.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/moc_meshdialog.o moc/moc_meshdialog.cpp
 
 obj/moc_window.o: moc/moc_window.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/moc_window.o moc/moc_window.cpp
