@@ -37,7 +37,7 @@ MOVE          = mv -f
 TAR           = tar -cf
 COMPRESS      = gzip -9f
 DISTNAME      = TP11.0.0
-DISTDIR = /home/killian/Bureau/TP1/obj/TP11.0.0
+DISTDIR = /home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D/obj/TP11.0.0
 LINK          = g++
 LFLAGS        = 
 LIBS          = $(SUBLIBS) /usr/lib/x86_64-linux-gnu/libQt5Widgets.so /usr/lib/x86_64-linux-gnu/libQt5Gui.so /usr/lib/x86_64-linux-gnu/libQt5Core.so -lGL -lpthread   
@@ -53,22 +53,20 @@ OBJECTS_DIR   = obj/
 ####### Files
 
 SOURCES       = glwidget.cpp \
-		cube.cpp \
 		maillage.cpp \
 		main.cpp \
 		window.cpp \
-		mainwindow.cpp \
-		logo.cpp qrc_shaders.cpp \
+		mainwindow.cpp qrc_resources.cpp \
+		qrc_shaders.cpp \
 		moc/moc_glwidget.cpp \
 		moc/moc_window.cpp \
 		moc/moc_mainwindow.cpp
 OBJECTS       = obj/glwidget.o \
-		obj/cube.o \
 		obj/maillage.o \
 		obj/main.o \
 		obj/window.o \
 		obj/mainwindow.o \
-		obj/logo.o \
+		obj/qrc_resources.o \
 		obj/qrc_shaders.o \
 		obj/moc_glwidget.o \
 		obj/moc_window.o \
@@ -152,17 +150,13 @@ DIST          = /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/yacc.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/lex.prf \
 		TP1.pro glwidget.h \
-		cube.h \
 		maillage.h \
 		window.h \
-		mainwindow.h \
-		logo.h glwidget.cpp \
-		cube.cpp \
+		mainwindow.h glwidget.cpp \
 		maillage.cpp \
 		main.cpp \
 		window.cpp \
-		mainwindow.cpp \
-		logo.cpp
+		mainwindow.cpp
 QMAKE_TARGET  = TP1
 DESTDIR       = 
 TARGET        = TP1
@@ -253,6 +247,7 @@ Makefile: TP1.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++/qmake.conf /us
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/yacc.prf \
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/lex.prf \
 		TP1.pro \
+		resources.qrc \
 		shaders.qrc
 	$(QMAKE) -o Makefile TP1.pro -spec linux-g++ CONFIG+=debug CONFIG+=qml_debug
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf:
@@ -334,6 +329,7 @@ Makefile: TP1.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++/qmake.conf /us
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/yacc.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/lex.prf:
 TP1.pro:
+resources.qrc:
 shaders.qrc:
 qmake: FORCE
 	@$(QMAKE) -o Makefile TP1.pro -spec linux-g++ CONFIG+=debug CONFIG+=qml_debug
@@ -349,10 +345,10 @@ dist: distdir FORCE
 distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
-	$(COPY_FILE) --parents shaders.qrc $(DISTDIR)/
+	$(COPY_FILE) --parents resources.qrc shaders.qrc $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp $(DISTDIR)/
-	$(COPY_FILE) --parents glwidget.h cube.h maillage.h window.h mainwindow.h logo.h $(DISTDIR)/
-	$(COPY_FILE) --parents glwidget.cpp cube.cpp maillage.cpp main.cpp window.cpp mainwindow.cpp logo.cpp $(DISTDIR)/
+	$(COPY_FILE) --parents glwidget.h maillage.h window.h mainwindow.h $(DISTDIR)/
+	$(COPY_FILE) --parents glwidget.cpp maillage.cpp main.cpp window.cpp mainwindow.cpp $(DISTDIR)/
 
 
 clean: compiler_clean 
@@ -376,9 +372,20 @@ check: first
 
 benchmark: first
 
-compiler_rcc_make_all: qrc_shaders.cpp
+compiler_rcc_make_all: qrc_resources.cpp qrc_shaders.cpp
 compiler_rcc_clean:
-	-$(DEL_FILE) qrc_shaders.cpp
+	-$(DEL_FILE) qrc_resources.cpp qrc_shaders.cpp
+qrc_resources.cpp: resources.qrc \
+		/usr/lib/qt5/bin/rcc \
+		icons/save.png \
+		icons/camera.png \
+		icons/open.png \
+		icons/help.png \
+		icons/save_snapshot.png \
+		icons/open_camera.png \
+		icons/cross.png
+	/usr/lib/qt5/bin/rcc -name resources resources.qrc -o qrc_resources.cpp
+
 qrc_shaders.cpp: shaders.qrc \
 		/usr/lib/qt5/bin/rcc \
 		vshader.glsl \
@@ -395,22 +402,20 @@ compiler_moc_header_make_all: moc/moc_glwidget.cpp moc/moc_window.cpp moc/moc_ma
 compiler_moc_header_clean:
 	-$(DEL_FILE) moc/moc_glwidget.cpp moc/moc_window.cpp moc/moc_mainwindow.cpp
 moc/moc_glwidget.cpp: glwidget.h \
-		logo.h \
-		cube.h \
 		maillage.h \
 		moc/moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/killian/Bureau/TP1/moc/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/killian/Bureau/TP1 -I/home/killian/Bureau/TP1 -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/9 -I/usr/include/x86_64-linux-gnu/c++/9 -I/usr/include/c++/9/backward -I/usr/lib/gcc/x86_64-linux-gnu/9/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include glwidget.h -o moc/moc_glwidget.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D/moc/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D -I/home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/9 -I/usr/include/x86_64-linux-gnu/c++/9 -I/usr/include/c++/9/backward -I/usr/lib/gcc/x86_64-linux-gnu/9/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include glwidget.h -o moc/moc_glwidget.cpp
 
 moc/moc_window.cpp: window.h \
 		moc/moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/killian/Bureau/TP1/moc/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/killian/Bureau/TP1 -I/home/killian/Bureau/TP1 -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/9 -I/usr/include/x86_64-linux-gnu/c++/9 -I/usr/include/c++/9/backward -I/usr/lib/gcc/x86_64-linux-gnu/9/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include window.h -o moc/moc_window.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D/moc/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D -I/home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/9 -I/usr/include/x86_64-linux-gnu/c++/9 -I/usr/include/c++/9/backward -I/usr/lib/gcc/x86_64-linux-gnu/9/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include window.h -o moc/moc_window.cpp
 
 moc/moc_mainwindow.cpp: mainwindow.h \
 		moc/moc_predefs.h \
 		/usr/lib/qt5/bin/moc
-	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/killian/Bureau/TP1/moc/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/killian/Bureau/TP1 -I/home/killian/Bureau/TP1 -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/9 -I/usr/include/x86_64-linux-gnu/c++/9 -I/usr/include/c++/9/backward -I/usr/lib/gcc/x86_64-linux-gnu/9/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include mainwindow.h -o moc/moc_mainwindow.cpp
+	/usr/lib/qt5/bin/moc $(DEFINES) --include /home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D/moc/moc_predefs.h -I/usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++ -I/home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D -I/home/killian/Bureau/M2_IMAGINE/projet3D/Projet_3D -I/usr/include/x86_64-linux-gnu/qt5 -I/usr/include/x86_64-linux-gnu/qt5/QtWidgets -I/usr/include/x86_64-linux-gnu/qt5/QtGui -I/usr/include/x86_64-linux-gnu/qt5/QtCore -I/usr/include/c++/9 -I/usr/include/x86_64-linux-gnu/c++/9 -I/usr/include/c++/9/backward -I/usr/lib/gcc/x86_64-linux-gnu/9/include -I/usr/local/include -I/usr/include/x86_64-linux-gnu -I/usr/include mainwindow.h -o moc/moc_mainwindow.cpp
 
 compiler_moc_objc_header_make_all:
 compiler_moc_objc_header_clean:
@@ -429,27 +434,18 @@ compiler_clean: compiler_rcc_clean compiler_moc_predefs_clean compiler_moc_heade
 ####### Compile
 
 obj/glwidget.o: glwidget.cpp glwidget.h \
-		logo.h \
-		cube.h \
 		maillage.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/glwidget.o glwidget.cpp
-
-obj/cube.o: cube.cpp cube.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/cube.o cube.cpp
 
 obj/maillage.o: maillage.cpp maillage.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/maillage.o maillage.cpp
 
 obj/main.o: main.cpp glwidget.h \
-		logo.h \
-		cube.h \
 		maillage.h \
 		mainwindow.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/main.o main.cpp
 
 obj/window.o: window.cpp glwidget.h \
-		logo.h \
-		cube.h \
 		maillage.h \
 		window.h \
 		mainwindow.h
@@ -458,13 +454,11 @@ obj/window.o: window.cpp glwidget.h \
 obj/mainwindow.o: mainwindow.cpp mainwindow.h \
 		window.h \
 		glwidget.h \
-		logo.h \
-		cube.h \
 		maillage.h
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/mainwindow.o mainwindow.cpp
 
-obj/logo.o: logo.cpp logo.h
-	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/logo.o logo.cpp
+obj/qrc_resources.o: qrc_resources.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/qrc_resources.o qrc_resources.cpp
 
 obj/qrc_shaders.o: qrc_shaders.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/qrc_shaders.o qrc_shaders.cpp

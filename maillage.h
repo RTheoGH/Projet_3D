@@ -6,6 +6,8 @@
 #include <QVector2D>
 #include <QOpenGLFunctions>
 #include <QString>
+#include <QOpenGLVertexArrayObject>
+#include <QOpenGLBuffer>
 
 class Maillage
 {
@@ -29,7 +31,7 @@ private:
 class Mesh
 {
 public:
-    Mesh() = default;
+    Mesh(){ bindBuffers(); };
     explicit Mesh(const QString &fileName) { loadOFF(fileName); }
 
     bool loadOFF(const QString &fileName);
@@ -39,9 +41,16 @@ public:
     QVector<unsigned int> triangles;
     QVector<QVector2D> uv_list;
 
+    QOpenGLVertexArrayObject vao;
+    QOpenGLBuffer vbo_pos;
+    QOpenGLBuffer vbo_norm;
+    QOpenGLBuffer ebo;
+    QOpenGLBuffer uv_buffer;
+
     bool valid = false;
 
-    void computeNormals(); // calcule les normales par sommet
+    void bindBuffers();
+    void computeNormals();
 };
 
 class Plane : public Mesh
@@ -90,6 +99,8 @@ public:
         }
 
         valid = true;
+        bindBuffers();
+
     }
 };
 

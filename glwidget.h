@@ -120,9 +120,7 @@ private:
 
     Mesh m_mesh;
 
-    QOpenGLBuffer m_meshVbo_pos { QOpenGLBuffer::VertexBuffer };
-    QOpenGLBuffer m_meshVbo_norm { QOpenGLBuffer::VertexBuffer };
-    QOpenGLBuffer m_meshEbo     { QOpenGLBuffer::IndexBuffer };
+
 
     bool m_meshLoaded = false;
     int m_indexCount = 0;

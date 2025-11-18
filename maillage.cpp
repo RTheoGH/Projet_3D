@@ -2,6 +2,10 @@
 #include <QFile>
 #include <QTextStream>
 #include <QDebug>
+#include <QOpenGLFunctions>
+#include <QOpenGLVertexArrayObject>
+#include <QOpenGLBuffer>
+#include <QOpenGLShaderProgram>
 
 void Maillage::add(const QVector3D &v, const QVector3D &n)
 {
@@ -95,5 +99,50 @@ bool Mesh::loadOFF(const QString &fileName)
 
     valid = true;
     return true;
+}
+
+
+void Mesh::bindBuffers()
+{
+
+    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
+
+    vao.create();
+    vao.bind();
+
+    // --- Positions ---
+    vbo_pos.create();
+    vbo_pos.bind();
+    vbo_pos.allocate(vertices.constData(), vertices.size() * sizeof(QVector3D));
+    f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+    f->glEnableVertexAttribArray(0);
+    vbo_pos.release();
+
+    // --- Normals ---
+    if (!normals.isEmpty()) {
+        vbo_norm.create();
+        vbo_norm.bind();
+        vbo_norm.allocate(normals.constData(), normals.size() * sizeof(QVector3D));
+        f->glVertexAttribPointer(1, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
+        f->glEnableVertexAttribArray(1);
+        vbo_norm.release();
+    }
+
+    // --- UV ---
+    if (!uv_list.isEmpty()) {
+        uv_buffer.create();
+        uv_buffer.bind();
+        uv_buffer.allocate(uv_list.constData(), uv_list.size() * sizeof(QVector2D));
+        f->glVertexAttribPointer(2, 2, GL_FLOAT, GL_FALSE, 0, nullptr);
+        f->glEnableVertexAttribArray(2);
+        uv_buffer.release();
+    }
+
+    // --- EBO ---
+    ebo.create();
+    ebo.bind();
+    ebo.allocate(triangles.constData(), triangles.size() * sizeof(unsigned int));
+
+    vao.release();
 }
 
