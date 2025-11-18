@@ -101,7 +101,7 @@ public:
         }
 
         valid = true;
-        bindBuffers();
+        // bindBuffers();
 
     }
 };

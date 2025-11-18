@@ -105,7 +105,6 @@ bool Mesh::loadOFF(const QString &fileName)
 void Mesh::bindBuffers()
 {
     if (gpu_uploaded) return;
-    // Assure-toi d'appeler initializeOpenGLFunctions() dans le GLWidget avant d'appeler bindBuffers()
 
     // create wrappers
     if (!vao) vao = std::make_unique<QOpenGLVertexArrayObject>();
@@ -127,7 +126,7 @@ void Mesh::bindBuffers()
     f->glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 0, nullptr);
     vbo_pos->release();
 
-    // normals (si présentes)
+    // normals
     if (!normals.isEmpty()) {
         vbo_norm->create();
         vbo_norm->bind();
@@ -151,10 +150,12 @@ void Mesh::bindBuffers()
     ebo->create();
     ebo->bind();
     ebo->allocate(triangles.constData(), triangles.size() * sizeof(unsigned int));
-    // No release of EBO while VAO bound — fine to release if you prefer
-    ebo->release();
+
+    // ebo->release();
 
     vao->release();
+
+    // ebo->release();
 
     gpu_uploaded = true;
 }

@@ -53,7 +53,7 @@
 #include <QOpenGLShaderProgram>
 #include <QCoreApplication>
 #include <math.h>
-
+#include <iostream>
 #include <QFile>
 #include <QTextStream>
 #include <QVector3D>
@@ -227,7 +227,6 @@ void GLWidget::paintGL()
     m_program->setUniformValue(m_mvp_matrix_loc, m_projection * m_view * m_model);
     m_program->setUniformValue(m_normal_matrix_loc, m_model.normalMatrix());
 
-    // --- Dessiner tous les meshes ---
     for (auto &mptr : scene_meshes) {
         if (!mptr || !mptr->gpu_uploaded) continue;
         QOpenGLVertexArrayObject::Binder vaoBinder(mptr->vao.get());
@@ -276,11 +275,17 @@ void GLWidget::addMesh(std::unique_ptr<Mesh> mesh)
 {
     if (!mesh || !mesh->valid) return;
 
+    for(int i = 0; i<mesh->vertices.size(); i++){
+        mesh->vertices[i][1] = (float) scene_meshes.size();
+    }
+
     makeCurrent();
     initializeOpenGLFunctions();
     // mesh->computeNormals();
     mesh->bindBuffers();
+
     scene_meshes.push_back(std::move(mesh));
+
     doneCurrent();
     update();
 }
