@@ -103,12 +103,25 @@ static void qNormalizeAngle(int &angle)
         angle -= 360 * 16;
 }
 
+int clamp(int angle){
+    int minX = 0 * 16;     // 0°
+    int maxX = -180 * 16;   // 180°
+
+    if (angle > minX) return minX;
+    if (angle <= maxX) return maxX;
+
+    return angle;
+}
+
 void GLWidget::setXRotation(int angle)
 {
-    qNormalizeAngle(angle);
+    //qNormalizeAngle(angle);
+    angle = clamp(angle);
+
+    std::cout << "angle : " << angle << std::endl;
+
     if (angle != m_xRot) {
         m_xRot = angle;
-        //Completer pour emettre un signal
         emit xRotationChanged(m_xRot);
 
         update();

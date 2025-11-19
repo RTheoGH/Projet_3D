@@ -65,7 +65,7 @@ public:
 
     bool has_heightmap = true;
 
-    Plane(float sizeX = 10, float sizeY = 10, unsigned int resolutionX = 32, unsigned int resolutionY = 32)
+    Plane(float sizeX = 10, float sizeY = 10, unsigned int resolutionX = 32, unsigned int resolutionY = 32, bool perlin = false)
     {
         vertices.clear();
         normals.clear();
@@ -114,6 +114,7 @@ public:
         heightmap->setMagnificationFilter(QOpenGLTexture::Linear);
 
     }
+
 };
 
 #endif

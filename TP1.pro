@@ -17,6 +17,7 @@ SOURCES       = glwidget.cpp \
 
 RESOURCES += \
     resources.qrc \
+    textures.qrc \
     shaders.qrc
 
 QT           += widgets

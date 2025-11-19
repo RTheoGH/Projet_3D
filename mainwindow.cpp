@@ -61,8 +61,9 @@
 
 MainWindow::MainWindow()
 {
-    resize(1300, 900);
-    setMinimumSize(800, 600);
+    resize(1400, 1000);
+    setMinimumSize(1400, 1000);
+    //showMaximized();
     //QMenuBar *menuBar = new QMenuBar;
     //setMenuBar(menuBar);
     //QMenu *menuWindow = menuBar->addMenu(tr("&Window"));
@@ -79,13 +80,21 @@ MainWindow::MainWindow()
 
     //QMenu *main = menuBar->addMenu("");
 
-    QAction *newMeshAction = new QAction(QIcon(":/icons/open.png"), tr("Nouveau maillage"), this);
+    QAction *newMeshAction = new QAction(QIcon(":/icons/open.png"), tr("Nouveau terrain"), this);
     connect(newMeshAction, &QAction::triggered, this, &MainWindow::openMeshDialog);
     toolbar1->addAction(newMeshAction);
 
-    QAction *openFileAction = new QAction(QIcon(":/icons/open_file.png"), tr("Ouvrir..."), this);
+    QAction *openFileAction = new QAction(QIcon(":/icons/open_file.png"), tr("Ouvrir un terrain"), this);
     connect(openFileAction, &QAction::triggered, this, &MainWindow::loadFile);
     toolbar1->addAction(openFileAction);
+
+    QAction *saveAction = new QAction(QIcon(":/icons/save.png"), tr("Sauvegarder le terrain"), this);
+    connect(saveAction, &QAction::triggered, this, &MainWindow::saveFile);
+    toolbar1->addAction(saveAction);
+
+    QAction *helpAction = new QAction(QIcon(":/icons/help.png"), tr("Informations"), this);
+    connect(helpAction, &QAction::triggered, this, &MainWindow::infos);
+    toolbar1->addAction(helpAction);
 
     addToolBarBreak();
 
@@ -167,8 +176,15 @@ void MainWindow::loadMesh()
 
 void MainWindow::loadFile()
 {
+    // ouvrir un fichier (3 heightmaps) (si pas de plan affiché en créer un selon la taille des heightmaps? sinon remplacer les heightmaps du plan actuel)
     QString fileName = QFileDialog::getOpenFileName(this,tr("Ouvrir un maillage"),"",tr("OFF Files (*.off);;All Files (*)"));
     if (fileName.isEmpty())
+    return;
+}
+
+void MainWindow::saveFile()
+{
+    // sauvegarder les 3 heightmaps;
     return;
 }
 
@@ -178,12 +194,18 @@ void MainWindow::openMeshDialog()
 
     if (dlg.exec() == QDialog::Accepted) {
         int size = dlg.meshSize();
+        bool perlin = dlg.usePerlinNoise();
 
         Window *w = qobject_cast<Window*>(centralWidget());
         if (!w)
             return;
 
-        auto p = std::make_unique<Plane>(10, 10, size, size);
+        auto p = std::make_unique<Plane>(10, 10, size, size, perlin);
         w->get_glWidget()->addMesh(std::move(p));
     }
+}
+
+void MainWindow::infos()
+{
+    return;
 }

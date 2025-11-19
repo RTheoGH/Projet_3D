@@ -52,6 +52,7 @@
 #include "window.h"
 #include "mainwindow.h"
 #include <QSlider>
+#include <QLabel>
 #include <QVBoxLayout>
 #include <QHBoxLayout>
 #include <QKeyEvent>
@@ -81,16 +82,35 @@ Window::Window(MainWindow *mw)
     connect(glWidget, &GLWidget::zRotationChanged, zSlider, &QSlider::setValue);
 
 
-    QVBoxLayout *mainLayout = new QVBoxLayout;
-    QHBoxLayout *container = new QHBoxLayout;
-    container->addWidget(glWidget);
-//    container->addWidget(xSlider);
-//    container->addWidget(ySlider);
-//    container->addWidget(zSlider);
+    QHBoxLayout *mainLayout = new QHBoxLayout;
 
-    QWidget *w = new QWidget;
-    w->setLayout(container);
-    mainLayout->addWidget(w);
+    QVBoxLayout *heightmaps = new QVBoxLayout;
+
+    QLabel *sand_h = new QLabel;
+    QLabel *water_h = new QLabel;
+    QLabel *lava_h = new QLabel;
+
+    sand_h->setPixmap(QPixmap(":/textures/heightmap.png").scaled(250, 250, Qt::KeepAspectRatio));
+    water_h->setPixmap(QPixmap(":/textures/heightmap.png").scaled(250, 250, Qt::KeepAspectRatio));
+    lava_h->setPixmap(QPixmap(":/textures/heightmap.png").scaled(250, 250, Qt::KeepAspectRatio));
+
+    heightmaps->addWidget(sand_h);
+    heightmaps->addWidget(water_h);
+    heightmaps->addWidget(lava_h);
+
+    mainLayout->addWidget(glWidget, 1);
+    mainLayout->addLayout(heightmaps);
+
+//    QHBoxLayout *container = new QHBoxLayout;
+//    container->addWidget(glWidget);
+///    container->addWidget(xSlider);
+////    container->addWidget(ySlider);
+////    container->addWidget(zSlider);
+
+//    QWidget *plan = new QWidget;
+//    plan->setLayout(container);
+//    mainLayout->addWidget(plan);
+
 //    dockBtn = new QPushButton(tr("Undock"), this);
 //    connect(dockBtn, &QPushButton::clicked, this, &Window::dockUndock);
 //    mainLayout->addWidget(dockBtn);

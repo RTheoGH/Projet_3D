@@ -64,6 +64,8 @@ private slots:
     void onAddNew();
     void loadMesh();
     void loadFile();
+    void saveFile();
+    void infos();
     void openMeshDialog();
 };
 
