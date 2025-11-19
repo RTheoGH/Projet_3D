@@ -126,7 +126,7 @@ private:
 
     float m_tx = 0.0f;
     float m_ty = 0.0f;
-    float m_zoom = -3.0f;
+    float m_zoom = -10.0f;
 
 };
 

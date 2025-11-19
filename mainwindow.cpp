@@ -51,6 +51,7 @@
 #include "mainwindow.h"
 #include "window.h"
 #include <QMenuBar>
+#include <QToolBar>
 #include <QMenu>
 #include <QMessageBox>
 #include <QFileDialog>
@@ -60,7 +61,10 @@
 
 MainWindow::MainWindow()
 {
-    QMenuBar *menuBar = new QMenuBar;
+    resize(1300, 900);
+    setMinimumSize(800, 600);
+    //QMenuBar *menuBar = new QMenuBar;
+    //setMenuBar(menuBar);
     //QMenu *menuWindow = menuBar->addMenu(tr("&Window"));
     //QMenu *menuWindow = menuBar->addMenu(QIcon(":/icons/open.png"),"");
 
@@ -70,15 +74,59 @@ MainWindow::MainWindow()
     //fileMenu->addAction(loadMeshAction);
     //connect(loadMeshAction, &QAction::triggered, this, &MainWindow::loadMesh);
 
+    QToolBar *toolbar1 = addToolBar("Mesh");
+    toolbar1->setIconSize(QSize(24,24));
+
+    //QMenu *main = menuBar->addMenu("");
+
     QAction *newMeshAction = new QAction(QIcon(":/icons/open.png"), tr("Nouveau maillage"), this);
-    menuBar->addAction(newMeshAction);
     connect(newMeshAction, &QAction::triggered, this, &MainWindow::openMeshDialog);
+    toolbar1->addAction(newMeshAction);
 
     QAction *openFileAction = new QAction(QIcon(":/icons/open_file.png"), tr("Ouvrir..."), this);
-    menuBar->addAction(openFileAction);
-    connect(openFileAction, &QAction::triggered, this, &MainWindow::loadMesh);
+    connect(openFileAction, &QAction::triggered, this, &MainWindow::loadFile);
+    toolbar1->addAction(openFileAction);
 
-    setMenuBar(menuBar);
+    addToolBarBreak();
+
+    QToolBar *toolbar2 = new QToolBar("Draw Tools");
+    toolbar2->setOrientation(Qt::Vertical);
+    toolbar2->setIconSize(QSize(48,48));
+
+    QActionGroup *drawGroup = new QActionGroup(this);
+    drawGroup->setExclusive(true);
+
+    QAction *sand = new QAction(QIcon(":/icons/sand.png"), tr("Sand"), this);
+    QAction *water = new QAction(QIcon(":/icons/water.png"), tr("Water"), this);
+    QAction *lava  = new QAction(QIcon(":/icons/lava.png"), tr("Lava"), this);
+
+    sand->setCheckable(true);
+    water->setCheckable(true);
+    lava->setCheckable(true);
+
+    drawGroup->addAction(sand);
+    drawGroup->addAction(water);
+    drawGroup->addAction(lava);
+
+    sand->setChecked(true);
+
+    toolbar2->addAction(sand);
+    toolbar2->addAction(water);
+    toolbar2->addAction(lava);
+
+    addToolBar(Qt::LeftToolBarArea, toolbar2);
+
+
+//    QMenu *draw = menuBar->addMenu("");
+
+//    QAction *sand = new QAction(QIcon(":/icons/sand.png"), tr("sand"),this);
+//    QAction *water = new QAction(QIcon(":/icons/water.png"), tr("water"),this);
+//    QAction *lava = new QAction(QIcon(":/icons/lava.png"), tr("lava"),this);
+
+//    draw->addAction(sand);
+//    draw->addAction(water);
+//    draw->addAction(lava);
+
 
     onAddNew();
 }
@@ -115,6 +163,13 @@ void MainWindow::loadMesh()
     auto p = std::make_unique<Plane>(10, 10, 32, 32);
 
     w->get_glWidget()->addMesh(std::move(p));
+}
+
+void MainWindow::loadFile()
+{
+    QString fileName = QFileDialog::getOpenFileName(this,tr("Ouvrir un maillage"),"",tr("OFF Files (*.off);;All Files (*)"));
+    if (fileName.isEmpty())
+    return;
 }
 
 void MainWindow::openMeshDialog()

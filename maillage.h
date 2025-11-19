@@ -79,7 +79,7 @@ public:
                 float y = 0.0f;
                 float z = ((float)j/(resolutionY-1) - 0.5f) * sizeY;
                 vertices.push_back(QVector3D(x, y, z));
-                normals.push_back(QVector3D(0.0f, 1.0f, 0.0f));
+                normals.push_back(QVector3D(0.0f, -1.0f, 0.0f));
 
                 float u = (float)i / (resolutionX-1);
                 float v = (float)j / (resolutionY-1);

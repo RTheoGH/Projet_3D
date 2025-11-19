@@ -12,7 +12,7 @@ MeshDialog::MeshDialog(QWidget *parent)
     setWindowTitle("Choisir la taille du maillage");
 
     sizeBox = new QComboBox;
-    sizeBox->addItems({"16", "32", "64", "128"});
+    sizeBox->addItems({"32", "64", "128", "256"});
 
     auto *layout = new QVBoxLayout;
     layout->addWidget(new QLabel("Taille du maillage :"));

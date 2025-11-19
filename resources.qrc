@@ -8,5 +8,8 @@
         <file>icons/save.png</file>
         <file>icons/save_snapshot.png</file>
         <file>icons/open_file.png</file>
+        <file>icons/lava.png</file>
+        <file>icons/sand.png</file>
+        <file>icons/water.png</file>
     </qresource>
 </RCC>
