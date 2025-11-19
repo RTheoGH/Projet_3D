@@ -9,6 +9,7 @@
 #include <QOpenGLVertexArrayObject>
 #include <QOpenGLBuffer>
 #include <QOpenGLTexture>
+#include <iostream>
 #include <memory>
 
 class Maillage
@@ -49,11 +50,17 @@ public:
     std::unique_ptr<QOpenGLBuffer> ebo;
     std::unique_ptr<QOpenGLBuffer> uv_buffer;
 
-    QOpenGLTexture *heightmap;
-
     bool valid = false;
     bool gpu_uploaded = false;
+
+    Mesh(const Mesh&) = delete;
+    Mesh& operator=(const Mesh&) = delete;
+
+    Mesh(Mesh&&) = default;
+    Mesh& operator=(Mesh&&) = default;
+
     bool has_heightmap = false;
+    QOpenGLTexture* heightmap = nullptr;
 
     void bindBuffers();
     void computeNormals();
@@ -62,7 +69,6 @@ public:
 class Plane : public Mesh
 {
 public:
-
     bool has_heightmap = true;
 
     Plane(float sizeX = 10, float sizeY = 10, unsigned int resolutionX = 32, unsigned int resolutionY = 32, bool perlin = false)
@@ -108,13 +114,18 @@ public:
         }
 
         valid = true;
+        Mesh::has_heightmap = true;
+        std::cout<<"heightmap : "<<has_heightmap<<std::endl;
         // bindBuffers();
 
-        heightmap = new QOpenGLTexture(QImage(":/textures/heightmap.png"));
-        heightmap->setMagnificationFilter(QOpenGLTexture::Linear);
+        // heightmap = new QOpenGLTexture(QImage(":/textures/heightmap.png"));
+        // heightmap->setMagnificationFilter(QOpenGLTexture::Linear);
+
 
     }
 
 };
+
+// sélection : cercle géodésique
 
 #endif
