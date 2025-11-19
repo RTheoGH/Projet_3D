@@ -59,6 +59,7 @@ SOURCES       = glwidget.cpp \
 		window.cpp \
 		mainwindow.cpp qrc_resources.cpp \
 		qrc_shaders.cpp \
+		qrc_textures.cpp \
 		moc/moc_glwidget.cpp \
 		moc/moc_meshdialog.cpp \
 		moc/moc_window.cpp \
@@ -71,6 +72,7 @@ OBJECTS       = obj/glwidget.o \
 		obj/mainwindow.o \
 		obj/qrc_resources.o \
 		obj/qrc_shaders.o \
+		obj/qrc_textures.o \
 		obj/moc_glwidget.o \
 		obj/moc_meshdialog.o \
 		obj/moc_window.o \
@@ -254,7 +256,8 @@ Makefile: TP1.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++/qmake.conf /us
 		/usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/lex.prf \
 		TP1.pro \
 		resources.qrc \
-		shaders.qrc
+		shaders.qrc \
+		textures.qrc
 	$(QMAKE) -o Makefile TP1.pro -spec linux-g++ CONFIG+=debug CONFIG+=qml_debug
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/spec_pre.prf:
 /usr/lib/x86_64-linux-gnu/qt5/mkspecs/common/unix.conf:
@@ -337,6 +340,7 @@ Makefile: TP1.pro /usr/lib/x86_64-linux-gnu/qt5/mkspecs/linux-g++/qmake.conf /us
 TP1.pro:
 resources.qrc:
 shaders.qrc:
+textures.qrc:
 qmake: FORCE
 	@$(QMAKE) -o Makefile TP1.pro -spec linux-g++ CONFIG+=debug CONFIG+=qml_debug
 
@@ -351,7 +355,7 @@ dist: distdir FORCE
 distdir: FORCE
 	@test -d $(DISTDIR) || mkdir -p $(DISTDIR)
 	$(COPY_FILE) --parents $(DIST) $(DISTDIR)/
-	$(COPY_FILE) --parents resources.qrc shaders.qrc $(DISTDIR)/
+	$(COPY_FILE) --parents resources.qrc shaders.qrc textures.qrc $(DISTDIR)/
 	$(COPY_FILE) --parents /usr/lib/x86_64-linux-gnu/qt5/mkspecs/features/data/dummy.cpp $(DISTDIR)/
 	$(COPY_FILE) --parents glwidget.h maillage.h meshdialog.h window.h mainwindow.h $(DISTDIR)/
 	$(COPY_FILE) --parents glwidget.cpp maillage.cpp main.cpp meshdialog.cpp window.cpp mainwindow.cpp $(DISTDIR)/
@@ -378,9 +382,9 @@ check: first
 
 benchmark: first
 
-compiler_rcc_make_all: qrc_resources.cpp qrc_shaders.cpp
+compiler_rcc_make_all: qrc_resources.cpp qrc_shaders.cpp qrc_textures.cpp
 compiler_rcc_clean:
-	-$(DEL_FILE) qrc_resources.cpp qrc_shaders.cpp
+	-$(DEL_FILE) qrc_resources.cpp qrc_shaders.cpp qrc_textures.cpp
 qrc_resources.cpp: resources.qrc \
 		/usr/lib/qt5/bin/rcc \
 		icons/save.png \
@@ -388,9 +392,12 @@ qrc_resources.cpp: resources.qrc \
 		icons/camera.png \
 		icons/open.png \
 		icons/help.png \
+		icons/lava.png \
 		icons/save_snapshot.png \
 		icons/open_camera.png \
-		icons/cross.png
+		icons/cross.png \
+		icons/sand.png \
+		icons/water.png
 	/usr/lib/qt5/bin/rcc -name resources resources.qrc -o qrc_resources.cpp
 
 qrc_shaders.cpp: shaders.qrc \
@@ -398,6 +405,11 @@ qrc_shaders.cpp: shaders.qrc \
 		shaders/vshader.glsl \
 		shaders/fshader.glsl
 	/usr/lib/qt5/bin/rcc -name shaders shaders.qrc -o qrc_shaders.cpp
+
+qrc_textures.cpp: textures.qrc \
+		/usr/lib/qt5/bin/rcc \
+		textures/heightmap.png
+	/usr/lib/qt5/bin/rcc -name textures textures.qrc -o qrc_textures.cpp
 
 compiler_moc_predefs_make_all: moc/moc_predefs.h
 compiler_moc_predefs_clean:
@@ -478,6 +490,9 @@ obj/qrc_resources.o: qrc_resources.cpp
 
 obj/qrc_shaders.o: qrc_shaders.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/qrc_shaders.o qrc_shaders.cpp
+
+obj/qrc_textures.o: qrc_textures.cpp 
+	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/qrc_textures.o qrc_textures.cpp
 
 obj/moc_glwidget.o: moc/moc_glwidget.cpp 
 	$(CXX) -c $(CXXFLAGS) $(INCPATH) -o obj/moc_glwidget.o moc/moc_glwidget.cpp

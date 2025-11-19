@@ -183,7 +183,7 @@ void MainWindow::openMeshDialog()
         if (!w)
             return;
 
-        auto p = std::make_unique<Plane>(10, 10, size, size);
+        auto p = std::make_unique<Plane>(10, 10, 1024, 1024);
         w->get_glWidget()->addMesh(std::move(p));
     }
 }

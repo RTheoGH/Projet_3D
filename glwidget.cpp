@@ -145,12 +145,14 @@ void GLWidget::cleanup()
     // Option 1 : laisser unique_ptr faire le boulot, mais certains wrappers veulent destroy()
     for (auto &mptr : scene_meshes) {
         if (!mptr) continue;
+        if (mptr->has_heightmap) { delete mptr->heightmap; mptr->heightmap = nullptr; }
         if (mptr->vao) mptr->vao->destroy();
         if (mptr->vbo_pos) mptr->vbo_pos->destroy();
         if (mptr->vbo_norm) mptr->vbo_norm->destroy();
         if (mptr->ebo) mptr->ebo->destroy();
         if (mptr->uv_buffer) mptr->uv_buffer->destroy();
     }
+
     scene_meshes.clear();
     doneCurrent();
 
@@ -234,12 +236,19 @@ void GLWidget::paintGL()
         if (mptr->has_heightmap) {
             glActiveTexture(GL_TEXTURE0);
             mptr->heightmap->bind();
-            m_program->setUniformValue("heightmap", 0);
+            // Récupérer la location du sampler une fois (voir initializeGL), sinon :
+            int loc = m_program->uniformLocation("heightmap");
+            m_program->setUniformValue(loc, 0); // texture unit 0
+
+            // set height scale (exemple)/*
+            int hloc = m_program->uniformLocation("height_scale");
+            m_program->setUniformValue(hloc, 3.0f); // ajuste 3.0f comme tu veux*/
         }
 
         QOpenGLVertexArrayObject::Binder vaoBinder(mptr->vao.get());
         glDrawElements(GL_TRIANGLES, mptr->triangles.size(), GL_UNSIGNED_INT, nullptr);
     }
+
 
     m_program->release();
 }
@@ -285,18 +294,29 @@ void GLWidget::addMesh(std::unique_ptr<Mesh> mesh)
 {
     if (!mesh || !mesh->valid) return;
 
-    for(int i = 0; i<mesh->vertices.size(); i++){
-        mesh->vertices[i][1] = (float) scene_meshes.size();
-    }
-
     makeCurrent();
     initializeOpenGLFunctions();
-    // mesh->computeNormals();
     mesh->bindBuffers();
 
     scene_meshes.push_back(std::move(mesh));
+    Mesh* mptr = scene_meshes.back().get();
+
+    // AUTO : si le mesh veut une heightmap et qu’elle n’est pas encore créée
+    if (mptr->has_heightmap && mptr->heightmap == nullptr) {
+
+        QImage img(":/textures/heightmap.png");
+        if (img.isNull()) {
+            qWarning() << "heightmap image is null! path=:/textures/heightmap.png";
+        } else {
+            mptr->heightmap = new QOpenGLTexture(img.mirrored());
+            mptr->heightmap->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
+            mptr->heightmap->setMagnificationFilter(QOpenGLTexture::Linear);
+            mptr->heightmap->generateMipMaps();
+        }
+    }
 
     doneCurrent();
     update();
 }
+
 
