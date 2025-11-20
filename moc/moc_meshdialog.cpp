@@ -1,5 +1,5 @@
 /****************************************************************************
-** Meta object code from reading C++ file 'meshdialog.h'
+** Meta object code from reading C++ file 'meshDialog.h'
 **
 ** Created by: The Qt Meta Object Compiler version 67 (Qt 5.15.13)
 **
@@ -7,11 +7,11 @@
 *****************************************************************************/
 
 #include <memory>
-#include "../meshdialog.h"
+#include "../meshDialog.h"
 #include <QtCore/qbytearray.h>
 #include <QtCore/qmetatype.h>
 #if !defined(Q_MOC_OUTPUT_REVISION)
-#error "The header file 'meshdialog.h' doesn't include <QObject>."
+#error "The header file 'meshDialog.h' doesn't include <QObject>."
 #elif Q_MOC_OUTPUT_REVISION != 67
 #error "This file was generated using the moc from 5.15.13. It"
 #error "cannot be used with the include files from this version of Qt."
