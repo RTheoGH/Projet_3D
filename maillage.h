@@ -31,6 +31,11 @@ private:
     int m_count;
 };
 
+struct HeightLayer{
+    QImage img;
+    QVector<float> heights;
+};
+
 class Mesh
 {
 public:
@@ -61,6 +66,10 @@ public:
 
     bool has_heightmap = false;
     QOpenGLTexture* heightmap = nullptr;
+
+    std::vector<HeightLayer> layers;
+    bool saveAllHeightmaps(const QString &dir);
+    bool loadAllHeightmaps(const QString& dir);
 
     void bindBuffers();
     void computeNormals();

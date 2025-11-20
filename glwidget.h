@@ -77,6 +77,7 @@ public:
 
     QSize minimumSizeHint() const override;
     QSize sizeHint() const override;
+    const std::vector<std::unique_ptr<Mesh>>& get_scene_meshes() const;
 
 public slots:
     //Completer : ajouter des slots pour signaler appliquer le changement de rotation

@@ -332,4 +332,7 @@ void GLWidget::addMesh(std::unique_ptr<Mesh> mesh)
     update();
 }
 
-
+const std::vector<std::unique_ptr<Mesh>>& GLWidget::get_scene_meshes() const
+{
+    return scene_meshes;
+}

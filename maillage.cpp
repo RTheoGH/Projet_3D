@@ -6,6 +6,7 @@
 #include <QOpenGLVertexArrayObject>
 #include <QOpenGLBuffer>
 #include <QOpenGLShaderProgram>
+#include <QDir>
 
 void Maillage::add(const QVector3D &v, const QVector3D &n)
 {
@@ -160,4 +161,48 @@ void Mesh::bindBuffers()
     gpu_uploaded = true;
 }
 
+bool Mesh::saveAllHeightmaps(const QString& dir)
+{
+    QDir d(dir);
+    if (!d.exists())
+        QDir().mkdir(dir);
 
+    for (int i = 0; i < layers.size(); ++i)
+    {
+        QString filename;
+
+        if (layers.size() == 1)
+            filename = d.filePath("heightmap.png");
+        else {
+            static const char* names[3] = {"sand", "water", "lava"};
+            filename = d.filePath(QString("%1.png").arg(names[i]));
+        }
+
+        if (!layers[i].img.save(filename))
+            return false;
+    }
+
+    return true;
+}
+
+bool Mesh::loadAllHeightmaps(const QString& dir)
+{
+    QDir d(dir);
+
+    if (layers.size() == 1) {
+        QString f = d.filePath("heightmap.png");
+        if (!layers[0].img.load(f))
+            return false;
+    }
+    else {
+        QString names[3] = {"sand.png", "water.png", "lava.png"};
+        for (int i = 0; i < 3; ++i) {
+            QString f = d.filePath(names[i]);
+            if (!layers[i].img.load(f))
+                return false;
+        }
+    }
+
+    //rebuildMeshFromLayers(); alors la jsp mdr
+    return true;
+}

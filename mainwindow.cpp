@@ -176,16 +176,63 @@ void MainWindow::loadMesh()
 
 void MainWindow::loadFile()
 {
-    // ouvrir un fichier (3 heightmaps) (si pas de plan affiché en créer un selon la taille des heightmaps? sinon remplacer les heightmaps du plan actuel)
-    QString fileName = QFileDialog::getOpenFileName(this,tr("Ouvrir un maillage"),"",tr("OFF Files (*.off);;All Files (*)"));
-    if (fileName.isEmpty())
+    // ouvrir un fichier (3 heightmaps (png)) (si pas de plan affiché en créer un selon la taille des heightmaps? sinon remplacer les heightmaps du plan actuel)
+    // QString fileName = QFileDialog::getOpenFileName(this,tr("Ouvrir un maillage"),"",tr("OFF Files (*.off);;All Files (*)"));
+    // if (fileName.isEmpty())
     return;
+
+    QString dir = QFileDialog::getExistingDirectory(this, "Charger un terrain");
+    if (dir.isEmpty())
+        return;
+
+    Window* w = qobject_cast<Window*>(centralWidget());
+    if (!w)
+        return;
+
+    GLWidget* gl = w->get_glWidget();
+    const std::vector<std::unique_ptr<Mesh>>& meshes = gl->get_scene_meshes();
+
+    if (meshes.empty())
+        return;
+
+    Mesh* m = meshes[0].get();
+
+    if (!m->loadAllHeightmaps(dir)) {
+        QMessageBox::warning(this, "Erreur", "Impossible de charger !");
+        return;
+    }
+
+    gl->update();
+    QMessageBox::information(this, "OK", "Terrain chargé !");
 }
 
 void MainWindow::saveFile()
 {
-    // sauvegarder les 3 heightmaps;
+    // sauvegarder les 3 heightmaps (png) dans un fichier ?;
     return;
+
+    QString dir = QFileDialog::getExistingDirectory(this, "Sauvegarder le terrain");
+    if (dir.isEmpty())
+        return;
+
+    Window* w = qobject_cast<Window*>(centralWidget());
+    if (!w)
+        return;
+
+    GLWidget* gl = w->get_glWidget();
+    const std::vector<std::unique_ptr<Mesh>>& meshes = gl->get_scene_meshes();
+
+    if (meshes.empty())
+        return;
+
+    Mesh* m = meshes[0].get();
+
+    if (!m->saveAllHeightmaps(dir)) {
+        QMessageBox::warning(this, "Erreur", "Impossible de sauvegarder !");
+        return;
+    }
+
+    QMessageBox::information(this, "OK", "Terrain sauvegardé !");
 }
 
 void MainWindow::openMeshDialog()
