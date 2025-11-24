@@ -276,6 +276,11 @@ void GLWidget::resizeGL(int w, int h)
 void GLWidget::mousePressEvent(QMouseEvent *event)
 {
     m_last_position = event->pos();
+
+    if (!(event->modifiers() & Qt::ControlModifier) && event->buttons() == Qt::LeftButton){
+        m_drawing = true;
+        drawOnHeightmap(event->pos());
+    }
 }
 
 void GLWidget::mouseMoveEvent(QMouseEvent *event)
@@ -294,12 +299,58 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         m_tx += dx * 0.01f;
         m_ty -= dy * 0.01f;
         update();
+    } else if (m_drawing && (event->buttons() & Qt::LeftButton)){
+        drawOnHeightmap(event->pos());
     }
     m_last_position = event->pos();
 }
 
 void GLWidget::wheelEvent(QWheelEvent *event){
     m_zoom += event->angleDelta().y() * 0.001f;
+    update();
+}
+
+void GLWidget::mouseReleaseEvent(QMouseEvent *event)
+{
+    Q_UNUSED(event);
+    m_drawing = false;
+}
+
+void GLWidget::drawOnHeightmap(const QPoint &pos){
+    if (scene_meshes.empty()) return;
+
+    Mesh *mesh = nullptr;
+    for (auto &m : scene_meshes) {
+        if (m->has_heightmap) {
+            mesh = m.get();
+            break;
+        }
+    }
+    if (!mesh || !mesh->heightmap) return;
+
+    QImage img = mesh->heightmapImage;
+
+    int x = pos.x() * img.width() / width();
+    int y = pos.y() * img.height() / height();
+
+    qDebug() << "Dessin sur heightmap en position :" << x << "," << y;
+
+    for (int i = -m_brush_radius; i <= m_brush_radius; ++i) {
+        for (int j = -m_brush_radius; j <= m_brush_radius; ++j) {
+            int nx = x + i;
+            int ny = y + j;
+            if (nx >= 0 && nx < img.width() && ny >= 0 && ny < img.height()) {
+                int value = qGray(img.pixel(nx, ny));
+                value = qBound(0, value + m_brush_strength, 255);
+                img.setPixel(nx, ny, qRgb(value, value, value));
+            }
+        }
+    }
+
+    mesh->heightmap->destroy();
+    mesh->heightmap->setData(img.mirrored());
+    mesh->heightmap->bind();
+
     update();
 }
 
@@ -321,6 +372,7 @@ void GLWidget::addMesh(std::unique_ptr<Mesh> mesh)
         if (img.isNull()) {
             qWarning() << "heightmap image is null! path=:/textures/heightmap.png";
         } else {
+            mptr->heightmapImage = img.convertToFormat(QImage::Format_Grayscale8);
             mptr->heightmap = new QOpenGLTexture(img.mirrored());
             mptr->heightmap->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
             mptr->heightmap->setMagnificationFilter(QOpenGLTexture::Linear);

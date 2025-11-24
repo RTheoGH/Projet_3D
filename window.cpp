@@ -143,6 +143,23 @@ void Window::keyPressEvent(QKeyEvent *e)
         QWidget::keyPressEvent(e);
 }
 
+void Window::mouseDrawOnLabel(QMouseEvent *event, QLabel* label, QImage &img){
+    int x = event->x() * img.width() / label->width();
+    int y = event->y() * img.height() / label->height();
+
+    for (int i = -5; i <= 5; ++i) {
+        for (int j = -5; j <= 5; ++j) {
+            int nx = x + i;
+            int ny = y + j;
+            if (nx >= 0 && nx < img.width() && ny >= 0 && ny < img.height()) {
+                img.setPixel(nx, ny, qRgb(255, 255, 255));
+            }
+        }
+    }
+
+    label->setPixmap(QPixmap::fromImage(img));
+}
+
 void Window::dockUndock()
 {
     if (parent()) {

@@ -66,6 +66,7 @@ public:
 
     bool has_heightmap = false;
     QOpenGLTexture* heightmap = nullptr;
+    QImage heightmapImage;
 
     std::vector<HeightLayer> layers;
     bool saveAllHeightmaps(const QString &dir);

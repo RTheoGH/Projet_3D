@@ -52,6 +52,7 @@
 #define WINDOW_H
 
 #include <QWidget>
+#include <QLabel>
 
 QT_BEGIN_NAMESPACE
 class QSlider;
@@ -71,6 +72,7 @@ public:
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;
+    void mouseDrawOnLabel(QMouseEvent *event, QLabel* label, QImage &img);
 
 private slots:
     void dockUndock();

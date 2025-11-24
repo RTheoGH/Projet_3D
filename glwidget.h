@@ -102,6 +102,8 @@ protected:
     void mousePressEvent(QMouseEvent *event) override;
     void mouseMoveEvent(QMouseEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
+    void mouseReleaseEvent(QMouseEvent *event) override;
+    void drawOnHeightmap(const QPoint &pos);
 
 private:
     // void setupVertexAttribs();
@@ -128,6 +130,11 @@ private:
     float m_tx = 0.0f;
     float m_ty = 0.0f;
     float m_zoom = -20.0f;
+
+    QPoint m_las_mouse_pos;
+    int m_brush_radius = 5;
+    int m_brush_strength = 10;
+    bool m_drawing;
 
 };
 
