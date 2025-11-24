@@ -166,6 +166,11 @@ MainWindow::MainWindow()
         GLWidget* gl = w->get_glWidget();
         connect(radiusSlider, &QSlider::valueChanged, gl, &GLWidget::setBrushRadius);
         connect(strengthSlider, &QSlider::valueChanged, gl, &GLWidget::setBrushStrength);
+
+        connect(sand, &QAction::triggered, this, [gl]() { gl->setActiveMesh(0); });
+        connect(water, &QAction::triggered, this, [gl]() { gl->setActiveMesh(1); });
+        connect(lava, &QAction::triggered, this, [gl]() { gl->setActiveMesh(2); });
+
     }
 }
 

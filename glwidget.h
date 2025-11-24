@@ -87,6 +87,7 @@ public slots:
     void cleanup();
     void setBrushRadius(int radius) { m_brush_radius = radius; }
     void setBrushStrength(int strength) { m_brush_strength = strength; }
+    void setActiveMesh(int index);
 
 signals:
 
@@ -143,6 +144,8 @@ private:
     int m_brush_radius = 20;
     int m_brush_strength = 20;
     bool m_drawing;
+
+    int activeMeshIndex = 0;
 
 };
 

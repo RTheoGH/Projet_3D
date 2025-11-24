@@ -339,11 +339,11 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     }
 }
 
-//void GLWidget::mouseReleaseEvent(QMouseEvent *event)
-//{
-//    Q_UNUSED(event);
-//    m_drawing = false;
-//}
+void GLWidget::mouseReleaseEvent(QMouseEvent *event)
+{
+    Q_UNUSED(event);
+    m_drawing = false;
+}
 
 void GLWidget::wheelEvent(QWheelEvent *event){
     m_zoom += event->angleDelta().y() * 0.001f;
@@ -443,13 +443,16 @@ void GLWidget::drawOnHeightmap(const QVector3D &point, bool invert)
 {
     if (scene_meshes.empty()) return;
 
-    Mesh *mesh = nullptr;
-    for (auto &m : scene_meshes) {
-        if (m->has_heightmap) {
-            mesh = m.get();
-            break;
-        }
-    }
+//    Mesh *mesh = nullptr;
+//    for (auto &m : scene_meshes) {
+//        if (m->has_heightmap) {
+//            mesh = m.get();
+//            break;
+//        }
+//    }
+//    if (!mesh || !mesh->heightmap) return;
+
+    Mesh *mesh = scene_meshes[activeMeshIndex].get();
     if (!mesh || !mesh->heightmap) return;
 
     QImage &img = mesh->heightmapImage;
@@ -484,7 +487,12 @@ void GLWidget::drawOnHeightmap(const QVector3D &point, bool invert)
     update();
 }
 
-
+void GLWidget::setActiveMesh(int index)
+{
+    if (index >= 0 && index < static_cast<int>(scene_meshes.size())){
+        activeMeshIndex = index;
+    }
+}
 
 
 
@@ -507,7 +515,7 @@ void GLWidget::addMesh(std::unique_ptr<Mesh> mesh)
             qWarning() << "heightmap image is null! path=:/textures/heightmap.png";
         } else {
             mptr->heightmapImage = img.convertToFormat(QImage::Format_Grayscale8);
-            mptr->heightmap = new QOpenGLTexture(img.mirrored());
+            mptr->heightmap = new QOpenGLTexture(img);
             mptr->heightmap->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
             mptr->heightmap->setMagnificationFilter(QOpenGLTexture::Linear);
             mptr->heightmap->generateMipMaps();
