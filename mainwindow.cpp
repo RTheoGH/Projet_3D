@@ -53,7 +53,9 @@
 #include <QMenuBar>
 #include <QToolBar>
 #include <QMenu>
+#include <QSlider>
 #include <QMessageBox>
+#include <QVBoxLayout>
 #include <QFileDialog>
 #include "glwidget.h"
 #include "maillage.h"
@@ -125,6 +127,26 @@ MainWindow::MainWindow()
 
     addToolBar(Qt::LeftToolBarArea, toolbar2);
 
+    QWidget *sliderWidget = new QWidget;
+    QVBoxLayout *sliderLayout = new QVBoxLayout;
+    sliderLayout->setContentsMargins(5,5,5,5);
+
+    QLabel *radiusLabel = new QLabel("Brush Radius");
+    QSlider *radiusSlider = new QSlider(Qt::Horizontal);
+    radiusSlider->setRange(1, 100);
+    radiusSlider->setValue(20);
+    sliderLayout->addWidget(radiusLabel);
+    sliderLayout->addWidget(radiusSlider);
+
+    QLabel *strengthLabel = new QLabel("Brush Strength");
+    QSlider *strengthSlider = new QSlider(Qt::Horizontal);
+    strengthSlider->setRange(1, 50);
+    strengthSlider->setValue(20);
+    sliderLayout->addWidget(strengthLabel);
+    sliderLayout->addWidget(strengthSlider);
+
+    sliderWidget->setLayout(sliderLayout);
+    toolbar2->addWidget(sliderWidget);
 
 //    QMenu *draw = menuBar->addMenu("");
 
@@ -138,6 +160,13 @@ MainWindow::MainWindow()
 
 
     onAddNew();
+
+    Window* w = qobject_cast<Window*>(centralWidget());
+    if (w) {
+        GLWidget* gl = w->get_glWidget();
+        connect(radiusSlider, &QSlider::valueChanged, gl, &GLWidget::setBrushRadius);
+        connect(strengthSlider, &QSlider::valueChanged, gl, &GLWidget::setBrushStrength);
+    }
 }
 
 void MainWindow::onAddNew()

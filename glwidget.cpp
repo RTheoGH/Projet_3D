@@ -118,7 +118,7 @@ void GLWidget::setXRotation(int angle)
     //qNormalizeAngle(angle);
     angle = clamp(angle);
 
-    std::cout << "angle : " << angle << std::endl;
+    //std::cout << "angle : " << angle << std::endl;
 
     if (angle != m_xRot) {
         m_xRot = angle;
@@ -275,39 +275,62 @@ void GLWidget::resizeGL(int w, int h)
 
 void GLWidget::mousePressEvent(QMouseEvent *event)
 {
-    m_last_position = event->pos();
+    // On stocke la position uniquement pour le dessin ou la rotation
+    bool ctrlPressed = event->modifiers() & Qt::ControlModifier;
 
-    if (!(event->modifiers() & Qt::ControlModifier) && event->buttons() == Qt::LeftButton){
+    if (ctrlPressed && event->buttons() & Qt::LeftButton) {
+        // Rotation : on initialise la dernière position pour la rotation
+        m_last_rot_position = event->pos();
+    } else if (!(ctrlPressed) && event->buttons() & Qt::LeftButton) {
+        // Dessin
         m_drawing = true;
-        drawOnHeightmap(event->pos());
+        QVector3D pointOnPlane = screenPosToPlane(event->pos());
+        drawOnHeightmap(pointOnPlane, false);
+    } else if (!(ctrlPressed) && event->buttons() & Qt::RightButton) {
+        // Dessin
+        m_drawing = true;
+        QVector3D pointOnPlane = screenPosToPlane(event->pos());
+        drawOnHeightmap(pointOnPlane, true);
     }
 }
 
 void GLWidget::mouseMoveEvent(QMouseEvent *event)
 {
-    int dx = event->x() - m_last_position.x();
-    int dy = event->y() - m_last_position.y();
-
     bool ctrlPressed = event->modifiers() & Qt::ControlModifier;
 
     if (ctrlPressed && (event->buttons() & Qt::LeftButton)) {
+        // Rotation
+        int dx = event->x() - m_last_rot_position.x();
+        int dy = event->y() - m_last_rot_position.y();
+
         setXRotation(m_xRot + 8 * dy);
         setYRotation(m_yRot + 8 * dx);
-    } else if (ctrlPressed && (event->buttons() & Qt::RightButton)) {
-//        setXRotation(m_xRot + 8 * dy);
-//        setZRotation(m_zRot + 8 * dx);
+
+        // Mise à jour de la dernière position de rotation
+        m_last_rot_position = event->pos();
+    }
+    else if (ctrlPressed && (event->buttons() & Qt::RightButton)) {
+        // Pan
+        int dx = event->x() - m_last_rot_position.x();
+        int dy = event->y() - m_last_rot_position.y();
+
         m_tx += dx * 0.01f;
         m_ty -= dy * 0.01f;
-        update();
-    } else if (m_drawing && (event->buttons() & Qt::LeftButton)){
-        drawOnHeightmap(event->pos());
-    }
-    m_last_position = event->pos();
-}
 
-void GLWidget::wheelEvent(QWheelEvent *event){
-    m_zoom += event->angleDelta().y() * 0.001f;
-    update();
+        // Mise à jour de la dernière position
+        m_last_rot_position = event->pos();
+        update();
+    }
+    else if (m_drawing && (event->buttons() & Qt::LeftButton)) {
+        // Dessin
+        QVector3D pointOnPlane = screenPosToPlane(event->pos());
+        drawOnHeightmap(pointOnPlane, false);
+    }
+    else if (m_drawing && (event->buttons() & Qt::RightButton)) {
+        // Dessin
+        QVector3D pointOnPlane = screenPosToPlane(event->pos());
+        drawOnHeightmap(pointOnPlane, true);
+    }
 }
 
 void GLWidget::mouseReleaseEvent(QMouseEvent *event)
@@ -316,7 +339,102 @@ void GLWidget::mouseReleaseEvent(QMouseEvent *event)
     m_drawing = false;
 }
 
-void GLWidget::drawOnHeightmap(const QPoint &pos){
+void GLWidget::wheelEvent(QWheelEvent *event){
+    m_zoom += event->angleDelta().y() * 0.001f;
+    update();
+}
+
+#include <limits>
+
+QVector3D GLWidget::screenPosToPlane(const QPoint &pos)
+{
+    if (scene_meshes.empty()) return QVector3D();
+
+    // 1️⃣ Calculer le rayon depuis l'écran
+    float nx = 2.0f * pos.x() / width() - 1.0f;
+    float ny = 1.0f - 2.0f * pos.y() / height();
+
+    QVector4D ray_clip(nx, ny, -1.0f, 1.0f);
+    QVector4D ray_eye = m_projection.inverted() * ray_clip;
+    ray_eye.setZ(-1.0f);
+    ray_eye.setW(0.0f);
+
+    QMatrix4x4 view = m_view;
+    view.rotate(m_xRot / 16.0f, 1,0,0);
+    view.rotate(m_yRot / 16.0f, 0,1,0);
+    view.rotate(m_zRot / 16.0f, 0,0,1);
+
+    QVector4D ray_world4 = view.inverted() * ray_eye;
+    QVector3D ray_world(ray_world4.x(), ray_world4.y(), ray_world4.z());
+    ray_world.normalize();
+
+    QVector3D cam_pos = (view.inverted() * QVector4D(0,0,0,1)).toVector3D();
+
+    // 2️⃣ Parcourir les triangles du mesh pour trouver intersection
+    Mesh* mesh = nullptr;
+    for (auto &m : scene_meshes) {
+        if (m->has_heightmap) {
+            mesh = m.get();
+            break;
+        }
+    }
+    if (!mesh) return QVector3D();
+
+    QVector3D closest_point;
+    float closest_t = std::numeric_limits<float>::max();
+
+    // Pour chaque triangle
+    for (size_t i = 0; i + 2 < mesh->triangles.size(); i += 3) {
+        QVector3D v0 = mesh->vertices[mesh->triangles[i]];
+        QVector3D v1 = mesh->vertices[mesh->triangles[i+1]];
+        QVector3D v2 = mesh->vertices[mesh->triangles[i+2]];
+
+        float t, u, v;
+        if (rayIntersectsTriangle(cam_pos, ray_world, v0, v1, v2, t, u, v)) {
+            if (t < closest_t) {
+                closest_t = t;
+                closest_point = cam_pos + t * ray_world;
+            }
+        }
+    }
+
+    return closest_point;
+}
+
+// Fonction de test intersection rayon-triangle
+bool GLWidget::rayIntersectsTriangle(
+    const QVector3D &orig, const QVector3D &dir,
+    const QVector3D &v0, const QVector3D &v1, const QVector3D &v2,
+    float &t, float &u, float &v)
+{
+    const float EPSILON = 1e-6f;
+    QVector3D edge1 = v1 - v0;
+    QVector3D edge2 = v2 - v0;
+    QVector3D h = QVector3D::crossProduct(dir, edge2);
+    float a = QVector3D::dotProduct(edge1, h);
+    if (fabs(a) < EPSILON)
+        return false; // rayon parallèle au triangle
+    float f = 1.0f / a;
+    QVector3D s = orig - v0;
+    u = f * QVector3D::dotProduct(s, h);
+    if (u < 0.0f || u > 1.0f)
+        return false;
+    QVector3D q = QVector3D::crossProduct(s, edge1);
+    v = f * QVector3D::dotProduct(dir, q);
+    if (v < 0.0f || u + v > 1.0f)
+        return false;
+    t = f * QVector3D::dotProduct(edge2, q);
+    if (t > EPSILON)
+        return true;
+    else
+        return false;
+}
+
+
+
+
+void GLWidget::drawOnHeightmap(const QVector3D &point, bool invert)
+{
     if (scene_meshes.empty()) return;
 
     Mesh *mesh = nullptr;
@@ -328,12 +446,18 @@ void GLWidget::drawOnHeightmap(const QPoint &pos){
     }
     if (!mesh || !mesh->heightmap) return;
 
-    QImage img = mesh->heightmapImage;
+    QImage &img = mesh->heightmapImage;
 
-    int x = pos.x() * img.width() / width();
-    int y = pos.y() * img.height() / height();
+    float sizeX = 10.0f;
+    float sizeZ = 10.0f;
 
-    qDebug() << "Dessin sur heightmap en position :" << x << "," << y;
+    int x = ((point.x() + sizeX / 2.0f) / sizeX) * img.width();
+    int y = ((point.z() + sizeZ / 2.0f) / sizeZ) * img.height();
+
+    x = qBound(0, x, img.width() - 1);
+    y = qBound(0, y, img.height() - 1);
+
+    int delta = invert ? -m_brush_strength : m_brush_strength;
 
     for (int i = -m_brush_radius; i <= m_brush_radius; ++i) {
         for (int j = -m_brush_radius; j <= m_brush_radius; ++j) {
@@ -341,18 +465,22 @@ void GLWidget::drawOnHeightmap(const QPoint &pos){
             int ny = y + j;
             if (nx >= 0 && nx < img.width() && ny >= 0 && ny < img.height()) {
                 int value = qGray(img.pixel(nx, ny));
-                value = qBound(0, value + m_brush_strength, 255);
+                value = qBound(0, value + delta, 255);
                 img.setPixel(nx, ny, qRgb(value, value, value));
             }
         }
     }
 
     mesh->heightmap->destroy();
-    mesh->heightmap->setData(img.mirrored());
+    mesh->heightmap->setData(img);
     mesh->heightmap->bind();
 
     update();
 }
+
+
+
+
 
 void GLWidget::addMesh(std::unique_ptr<Mesh> mesh)
 {

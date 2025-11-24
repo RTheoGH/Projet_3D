@@ -85,6 +85,8 @@ public slots:
     void setYRotation(int angle);
     void setZRotation(int angle);
     void cleanup();
+    void setBrushRadius(int radius) { m_brush_radius = radius; }
+    void setBrushStrength(int strength) { m_brush_strength = strength; }
 
 signals:
 
@@ -103,7 +105,12 @@ protected:
     void mouseMoveEvent(QMouseEvent *event) override;
     void wheelEvent(QWheelEvent *event) override;
     void mouseReleaseEvent(QMouseEvent *event) override;
-    void drawOnHeightmap(const QPoint &pos);
+    void drawOnHeightmap(const QVector3D &point, bool invert);
+    QVector3D screenPosToPlane(const QPoint &pos);
+    bool rayIntersectsTriangle(
+        const QVector3D &orig, const QVector3D &dir,
+        const QVector3D &v0, const QVector3D &v1, const QVector3D &v2,
+        float &t, float &u, float &v);
 
 private:
     // void setupVertexAttribs();
@@ -131,9 +138,10 @@ private:
     float m_ty = 0.0f;
     float m_zoom = -20.0f;
 
+    QPoint m_last_rot_position;
     QPoint m_las_mouse_pos;
-    int m_brush_radius = 5;
-    int m_brush_strength = 10;
+    int m_brush_radius = 20;
+    int m_brush_strength = 20;
     bool m_drawing;
 
 };
