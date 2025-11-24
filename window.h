@@ -73,6 +73,7 @@ public:
 protected:
     void keyPressEvent(QKeyEvent *event) override;
     void mouseDrawOnLabel(QMouseEvent *event, QLabel* label, QImage &img);
+    bool eventFilter(QObject *obj, QEvent *event) override;
 
 private slots:
     void dockUndock();
@@ -86,6 +87,9 @@ private:
     QSlider *zSlider;
     QPushButton *dockBtn;
     MainWindow *mainWindow;
+
+    QImage sandImage;
+    QLabel *sand_h;
 };
 
 #endif

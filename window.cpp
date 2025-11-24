@@ -86,11 +86,14 @@ Window::Window(MainWindow *mw)
 
     QVBoxLayout *heightmaps = new QVBoxLayout;
 
-    QLabel *sand_h = new QLabel;
+    sand_h = new QLabel;
     QLabel *water_h = new QLabel;
     QLabel *lava_h = new QLabel;
 
-    sand_h->setPixmap(QPixmap(":/textures/heightmap.png").scaled(250, 250, Qt::KeepAspectRatio));
+    sandImage = QImage(":/textures/heightmap.png").scaled(250, 250, Qt::KeepAspectRatio);
+    sand_h->setPixmap(QPixmap::fromImage(sandImage));
+    sand_h->installEventFilter(this);
+
     water_h->setPixmap(QPixmap(":/textures/heightmap.png").scaled(250, 250, Qt::KeepAspectRatio));
     lava_h->setPixmap(QPixmap(":/textures/heightmap.png").scaled(250, 250, Qt::KeepAspectRatio));
 
@@ -143,7 +146,8 @@ void Window::keyPressEvent(QKeyEvent *e)
         QWidget::keyPressEvent(e);
 }
 
-void Window::mouseDrawOnLabel(QMouseEvent *event, QLabel* label, QImage &img){
+void Window::mouseDrawOnLabel(QMouseEvent *event, QLabel* label, QImage &img)
+{
     int x = event->x() * img.width() / label->width();
     int y = event->y() * img.height() / label->height();
 
@@ -158,6 +162,23 @@ void Window::mouseDrawOnLabel(QMouseEvent *event, QLabel* label, QImage &img){
     }
 
     label->setPixmap(QPixmap::fromImage(img));
+}
+
+bool Window::eventFilter(QObject *obj, QEvent *event)
+{
+    if (obj == sand_h) {
+
+        if (event->type() == QEvent::MouseButtonPress ||
+            event->type() == QEvent::MouseMove) {
+
+            QMouseEvent *mouse = static_cast<QMouseEvent*>(event);
+            mouseDrawOnLabel(mouse, sand_h, sandImage);
+
+            return true;
+        }
+    }
+
+    return QWidget::eventFilter(obj, event);
 }
 
 void Window::dockUndock()
