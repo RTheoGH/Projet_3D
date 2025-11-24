@@ -36,6 +36,18 @@ struct HeightLayer{
     QVector<float> heights;
 };
 
+struct Material{
+    enum MaterialType{
+        SAND,
+        WATER,
+        LAVA
+    };
+
+    MaterialType type;
+    QImage albedo;
+    float smooth_strength; // à voir
+};
+
 class Mesh
 {
 public:
