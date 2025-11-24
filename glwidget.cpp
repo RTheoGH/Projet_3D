@@ -257,6 +257,12 @@ void GLWidget::paintGL()
             int hloc = m_program->uniformLocation("height_scale");
             m_program->setUniformValue(hloc, 3.0f); // ajuste 3.0f comme tu veux*/
         }
+        if (!mptr->textureAlbedo.isNull()){
+            glActiveTexture(GL_TEXTURE1);
+            mptr->albedo->bind();
+            int loc = m_program->uniformLocation("albedo");
+            m_program->setUniformValue(loc, 1);
+        }
 
         QOpenGLVertexArrayObject::Binder vaoBinder(mptr->vao.get());
         glDrawElements(GL_TRIANGLES, mptr->triangles.size(), GL_UNSIGNED_INT, nullptr);
@@ -333,11 +339,11 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     }
 }
 
-void GLWidget::mouseReleaseEvent(QMouseEvent *event)
-{
-    Q_UNUSED(event);
-    m_drawing = false;
-}
+//void GLWidget::mouseReleaseEvent(QMouseEvent *event)
+//{
+//    Q_UNUSED(event);
+//    m_drawing = false;
+//}
 
 void GLWidget::wheelEvent(QWheelEvent *event){
     m_zoom += event->angleDelta().y() * 0.001f;
@@ -506,6 +512,14 @@ void GLWidget::addMesh(std::unique_ptr<Mesh> mesh)
             mptr->heightmap->setMagnificationFilter(QOpenGLTexture::Linear);
             mptr->heightmap->generateMipMaps();
         }
+    }
+
+    // chargement de l'albedo
+    if (!mptr->textureAlbedo.isNull()){
+        mptr->albedo = new QOpenGLTexture(mptr->textureAlbedo);
+        mptr->albedo->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
+        mptr->albedo->setMagnificationFilter(QOpenGLTexture::Linear);
+        mptr->albedo->generateMipMaps();
     }
 
     doneCurrent();

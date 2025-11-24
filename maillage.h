@@ -67,6 +67,8 @@ public:
     bool has_heightmap = false;
     QOpenGLTexture* heightmap = nullptr;
     QImage heightmapImage;
+    QOpenGLTexture* albedo = nullptr;
+    QImage textureAlbedo;
 
     std::vector<HeightLayer> layers;
     bool saveAllHeightmaps(const QString &dir);
@@ -81,7 +83,7 @@ class Plane : public Mesh
 public:
     bool has_heightmap = true;
 
-    Plane(float sizeX = 10, float sizeY = 10, unsigned int resolutionX = 32, unsigned int resolutionY = 32, bool perlin = false)
+    Plane(float sizeX = 10, float sizeY = 10, unsigned int resolutionX = 32, unsigned int resolutionY = 32, bool perlin = false, QString texturePath = nullptr)
     {
         vertices.clear();
         normals.clear();
@@ -125,10 +127,15 @@ public:
 
         valid = true;
         Mesh::has_heightmap = true;
-        std::cout<<"heightmap : "<<has_heightmap<<std::endl;
+        // std::cout<<"heightmap : "<<has_heightmap<<std::endl;
+        if(texturePath != nullptr){
+            std::cout<<"récupération de la texture"<<std::endl;
+            Mesh::textureAlbedo = QImage(texturePath);
+        }
+
         // bindBuffers();
 
-        // heightmap = new QOpenGLTexture(QImage(":/textures/heightmap.png"));
+//         heightmap = new QOpenGLTexture(QImage(":/textures/heightmap.png"));
         // heightmap->setMagnificationFilter(QOpenGLTexture::Linear);
 
 
