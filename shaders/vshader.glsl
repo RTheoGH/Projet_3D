@@ -5,6 +5,7 @@ in vec2 uv;
 
 out vec3 v_position;
 out vec3 v_normal;
+out vec2 v_uv;
 
 uniform mat4 mvp_matrix;
 uniform mat3 normal_matrix;
@@ -29,6 +30,7 @@ void main() {
     vec3 new_normal = -normalize(cross(dy, dx));
 
     v_normal = normal_matrix * new_normal;
+    v_uv = uv;
 
     // Calculate vertex position in screen space
     gl_Position = mvp_matrix * vec4(v_position, 1);

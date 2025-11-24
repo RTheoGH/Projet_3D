@@ -168,10 +168,16 @@ void MainWindow::loadMesh()
     //     QMessageBox::warning(this, tr("Erreur"), tr("Impossible de charger le maillage."));
     //     return;
     // }
-
+    std::cout<<"allo1"<<std::endl;
     auto p = std::make_unique<Plane>(10, 10, 32, 32);
-
     w->get_glWidget()->addMesh(std::move(p));
+    std::cout<<"allo1"<<std::endl;
+    auto p2 = std::make_unique<Plane>(10, 10, 32, 32);
+    w->get_glWidget()->addMesh(std::move(p2));
+    std::cout<<"allo2"<<std::endl;
+    auto p3 = std::make_unique<Plane>(10, 10, 32, 32);
+    w->get_glWidget()->addMesh(std::move(p3));
+    std::cout<<"allo3"<<std::endl;
 }
 
 void MainWindow::loadFile()
@@ -247,8 +253,12 @@ void MainWindow::openMeshDialog()
         if (!w)
             return;
 
-        auto p = std::make_unique<Plane>(10, 10, size, size, perlin);
+        auto p = std::make_unique<Plane>(10, 10, size, size, perlin, ":/textures/sand_texture.png");
         w->get_glWidget()->addMesh(std::move(p));
+        auto p2 = std::make_unique<Plane>(10, 10, size, size, perlin, ":/textures/water_texture.png");
+        w->get_glWidget()->addMesh(std::move(p2));
+        auto p3 = std::make_unique<Plane>(10, 10, size, size, perlin, ":/textures/lava_texture.png");
+        w->get_glWidget()->addMesh(std::move(p3));
     }
 }
 

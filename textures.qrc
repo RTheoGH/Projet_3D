@@ -1,5 +1,8 @@
 <RCC>
     <qresource prefix="/">
         <file>textures/heightmap.png</file>
+        <file>textures/lava_texture.png</file>
+        <file>textures/sand_texture.png</file>
+        <file>textures/water_texture.png</file>
     </qresource>
 </RCC>
