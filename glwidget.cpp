@@ -155,7 +155,7 @@ void GLWidget::setZRotation(int angle)
 void GLWidget::cleanup()
 {
     makeCurrent();
-    // Option 1 : laisser unique_ptr faire le boulot, mais certains wrappers veulent destroy()
+
     for (auto &mptr : scene_meshes) {
         if (!mptr) continue;
         if (mptr->has_heightmap) { delete mptr->heightmap; mptr->heightmap = nullptr; }
@@ -496,7 +496,7 @@ void GLWidget::setActiveMesh(int index)
 
 
 
-void GLWidget::addMesh(std::unique_ptr<Mesh> mesh)
+void GLWidget::addMesh(std::unique_ptr<Mesh> mesh, bool perlin)
 {
     if (!mesh || !mesh->valid) return;
 
@@ -510,10 +510,18 @@ void GLWidget::addMesh(std::unique_ptr<Mesh> mesh)
     // AUTO : si le mesh veut une heightmap et qu’elle n’est pas encore créée
     if (mptr->has_heightmap && mptr->heightmap == nullptr) {
 
-        QImage img(":/textures/heightmap.png");
-        if (img.isNull()) {
-            qWarning() << "heightmap image is null! path=:/textures/heightmap.png";
+        QImage img;
+
+        if(!perlin){
+            img = QImage(":/textures/heightmap.png");
         } else {
+            img = mptr->heightmapImage;
+        }
+
+        if (img.isNull()) {
+            qWarning() << "heightmap image is null!";
+        } else {
+
             mptr->heightmapImage = img.convertToFormat(QImage::Format_Grayscale8);
             mptr->heightmap = new QOpenGLTexture(img);
             mptr->heightmap->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);

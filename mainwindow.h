@@ -67,6 +67,7 @@ private slots:
     void saveFile();
     void infos();
     void openMeshDialog();
+    QImage loadPerlinNoiseImage();
 };
 
 #endif

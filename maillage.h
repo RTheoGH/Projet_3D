@@ -95,7 +95,7 @@ class Plane : public Mesh
 public:
     bool has_heightmap = true;
 
-    Plane(float sizeX = 10, float sizeY = 10, unsigned int resolutionX = 32, unsigned int resolutionY = 32, bool perlin = false, QString texturePath = nullptr)
+    Plane(float sizeX = 10, float sizeY = 10, unsigned int resolutionX = 32, unsigned int resolutionY = 32, QString texturePath = nullptr)
     {
         vertices.clear();
         normals.clear();

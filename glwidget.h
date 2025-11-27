@@ -73,7 +73,7 @@ public:
     static bool isTransparent() { return m_transparent; }
     static void setTransparent(bool t) { m_transparent = t; }
 
-    void addMesh(std::unique_ptr<Mesh> mesh);
+    void addMesh(std::unique_ptr<Mesh> mesh, bool perlin);
 
     QSize minimumSizeHint() const override;
     QSize sizeHint() const override;

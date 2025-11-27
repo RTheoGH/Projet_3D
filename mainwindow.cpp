@@ -60,6 +60,8 @@
 #include "glwidget.h"
 #include "maillage.h"
 #include "meshdialog.h"
+#include "SimplexNoise.h"
+#include <QRgb>
 
 MainWindow::MainWindow()
 {
@@ -204,13 +206,13 @@ void MainWindow::loadMesh()
     // }
     std::cout<<"allo1"<<std::endl;
     auto p = std::make_unique<Plane>(10, 10, 32, 32);
-    w->get_glWidget()->addMesh(std::move(p));
+    w->get_glWidget()->addMesh(std::move(p), false);
     std::cout<<"allo1"<<std::endl;
     auto p2 = std::make_unique<Plane>(10, 10, 32, 32);
-    w->get_glWidget()->addMesh(std::move(p2));
+    w->get_glWidget()->addMesh(std::move(p2), false);
     std::cout<<"allo2"<<std::endl;
     auto p3 = std::make_unique<Plane>(10, 10, 32, 32);
-    w->get_glWidget()->addMesh(std::move(p3));
+    w->get_glWidget()->addMesh(std::move(p3), false);
     std::cout<<"allo3"<<std::endl;
 }
 
@@ -287,13 +289,53 @@ void MainWindow::openMeshDialog()
         if (!w)
             return;
 
-        auto p = std::make_unique<Plane>(10, 10, size, size, perlin, ":/textures/sand_texture.png");
-        w->get_glWidget()->addMesh(std::move(p));
-        auto p2 = std::make_unique<Plane>(10, 10, size, size, perlin, ":/textures/water_texture.png");
-        w->get_glWidget()->addMesh(std::move(p2));
-        auto p3 = std::make_unique<Plane>(10, 10, size, size, perlin, ":/textures/lava_texture.png");
-        w->get_glWidget()->addMesh(std::move(p3));
+        auto p = std::make_unique<Plane>(10, 10, size, size, ":/textures/sand_texture.png");
+        auto p2 = std::make_unique<Plane>(10, 10, size, size, ":/textures/water_texture.png");
+        auto p3 = std::make_unique<Plane>(10, 10, size, size, ":/textures/lava_texture.png");
+
+        if(perlin){
+            QImage perlin_image = loadPerlinNoiseImage();
+            p->heightmapImage = perlin_image;
+            p2->heightmapImage = perlin_image;
+            p3->heightmapImage = perlin_image;
+        }
+
+        w->get_glWidget()->addMesh(std::move(p), perlin);
+        w->get_glWidget()->addMesh(std::move(p2), perlin);
+        w->get_glWidget()->addMesh(std::move(p3), perlin);
+
+
     }
+}
+
+QImage MainWindow::loadPerlinNoiseImage()
+{
+    float scale     = 200.f;
+    float offset_x  = 0.0f; // 5.9f;
+    float offset_y  = 0.0f; // 5.1f;
+    float offset_z  = 0.0f; // 0.05f;
+    float lacunarity    = 1.99f;
+    float persistance   = 0.5f;
+
+    const SimplexNoise simplex(0.1f/scale, 0.5f, lacunarity, persistance); // Amplitude of 0.5 for the 1st octave : sum ~1.0f
+    const int octaves = 5; // Estimate number of octaves needed for the current scale
+
+    QImage res_image(1024, 1024, QImage::Format_RGB32);
+
+    for(int i=0 ; i<res_image.height(); i++){
+        const float y = static_cast<float>(i - res_image.height()/2 + offset_y); // (*scale)
+        for(int j=0 ; j<res_image.width(); j++){
+
+            const float x = static_cast<float>(j - res_image.width()/2 + offset_x);
+            const int noise = (simplex.fractal(octaves, x, y) + 1.0)/2.0 * 255.0/* + offset_z*/; // range [-1, 1] -> [0, 255]
+
+            const QRgb pixel_value = qRgb(noise, noise, noise);
+            res_image.setPixel(i, j, pixel_value);
+
+        }
+    }
+
+    return res_image;
 }
 
 void MainWindow::infos()

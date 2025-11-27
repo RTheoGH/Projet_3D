@@ -7,8 +7,10 @@ HEADERS       = glwidget.h \
                 maillage.h \
                 meshdialog.h \
                 window.h \
-                mainwindow.h
+                mainwindow.h \
+                SimplexNoise.h
 SOURCES       = glwidget.cpp \
+                SimplexNoise.cpp \
                 maillage.cpp \
                 main.cpp \
                 meshdialog.cpp \
