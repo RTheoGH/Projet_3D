@@ -89,11 +89,11 @@ MainWindow::MainWindow()
     toolbar1->addAction(newMeshAction);
 
     QAction *openFileAction = new QAction(QIcon(":/icons/open_file.png"), tr("Ouvrir un terrain"), this);
-    connect(openFileAction, &QAction::triggered, this, &MainWindow::loadFile);
+    connect(openFileAction, &QAction::triggered, this, &MainWindow::loadTerrainBinary);
     toolbar1->addAction(openFileAction);
 
     QAction *saveAction = new QAction(QIcon(":/icons/save.png"), tr("Sauvegarder le terrain"), this);
-    connect(saveAction, &QAction::triggered, this, &MainWindow::saveFile);
+    connect(saveAction, &QAction::triggered, this, &MainWindow::saveTerrainBinary);
     toolbar1->addAction(saveAction);
 
     QAction *helpAction = new QAction(QIcon(":/icons/help.png"), tr("Informations"), this);
@@ -221,6 +221,9 @@ void MainWindow::loadFile()
     // ouvrir un fichier (3 heightmaps (png)) (si pas de plan affiché en créer un selon la taille des heightmaps? sinon remplacer les heightmaps du plan actuel)
     // QString fileName = QFileDialog::getOpenFileName(this,tr("Ouvrir un maillage"),"",tr("OFF Files (*.off);;All Files (*)"));
     // if (fileName.isEmpty())
+
+
+
     return;
 
     QString dir = QFileDialog::getExistingDirectory(this, "Charger un terrain");
@@ -347,6 +350,163 @@ QImage MainWindow::loadPerlinNoiseImage()
 
     return res_image;
 }
+
+bool saveHeightmapsBinary(const QImage& img1, const QImage& img2, const QImage& img3, const QString& filename)
+{
+    QFile file(filename);
+    if (!file.open(QIODevice::WriteOnly))
+        return false;
+
+    QDataStream out(&file);
+    out.setByteOrder(QDataStream::LittleEndian);
+
+    out.writeRawData("HMAP", 4);
+    out << quint32(1);
+    out << quint32(3);
+
+    auto writeImage = [&](const QImage& img)
+    {
+        QImage saved = img.convertToFormat(QImage::Format_Grayscale8);
+
+        quint32 w = saved.width();
+        quint32 h = saved.height();
+        quint32 bpp = saved.bytesPerLine() / saved.width();
+        quint32 dataSize = saved.sizeInBytes();
+
+        out << w;
+        out << h;
+        out << bpp;
+        out << dataSize;
+
+        out.writeRawData(
+            reinterpret_cast<const char*>(saved.bits()),
+            dataSize
+        );
+    };
+
+    writeImage(img1);
+    writeImage(img2);
+    writeImage(img3);
+
+    file.close();
+    return true;
+}
+
+bool loadHeightmapsBinary(QImage& img1, QImage& img2, QImage& img3, const QString& filename)
+{
+    QFile file(filename);
+    if (!file.open(QIODevice::ReadOnly))
+        return false;
+
+    QDataStream in(&file);
+    in.setByteOrder(QDataStream::LittleEndian);
+
+    char signature[4];
+    in.readRawData(signature, 4);
+
+    if (strncmp(signature, "HMAP", 4) != 0)
+        return false;
+
+    quint32 version, imageCount;
+    in >> version;
+    in >> imageCount;
+
+    if (version != 1 || imageCount != 3)
+        return false;
+
+    auto readImage = [&](QImage& img)
+    {
+        quint32 w, h, bpp, dataSize;
+        in >> w;
+        in >> h;
+        in >> bpp;
+        in >> dataSize;
+
+        img = QImage(w, h, QImage::Format_Grayscale8);
+
+        in.readRawData(
+            reinterpret_cast<char*>(img.bits()),
+            dataSize
+        );
+    };
+
+    readImage(img1);
+    readImage(img2);
+    readImage(img3);
+
+    file.close();
+    return true;
+}
+
+void MainWindow::saveTerrainBinary()
+{
+    QString filename = QFileDialog::getSaveFileName(
+        this,"Sauvegarder le terrain","","Heightmap (*.hmap)"
+    );
+
+    if (filename.isEmpty())
+        return;
+
+    Window* w = qobject_cast<Window*>(centralWidget());
+    if (!w) return;
+
+    GLWidget* gl = w->get_glWidget();
+    const auto& meshes = gl->get_scene_meshes();
+
+    if (meshes.size() < 3) {
+        QMessageBox::warning(this, "Erreur", "Il faut 3 terrains !");
+        return;
+    }
+
+    QImage& img1 = meshes[0]->heightmapImage;
+    QImage& img2 = meshes[1]->heightmapImage;
+    QImage& img3 = meshes[2]->heightmapImage;
+
+    if (!saveHeightmapsBinary(img1, img2, img3, filename)) {
+        QMessageBox::critical(this, "Erreur", "Échec sauvegarde !");
+        return;
+    }
+
+    QMessageBox::information(this, "OK", "Terrain sauvegardé !");
+}
+
+void MainWindow::loadTerrainBinary()
+{
+    QString filename = QFileDialog::getOpenFileName(
+        this,"Charger un terrain","","Heightmap (*.hmap)"
+    );
+
+    if (filename.isEmpty())
+        return;
+
+    Window* w = qobject_cast<Window*>(centralWidget());
+    if (!w) return;
+
+    GLWidget* gl = w->get_glWidget();
+    const auto& meshes = gl->get_scene_meshes();
+
+    if (meshes.size() < 3) {
+        QMessageBox::warning(this, "Erreur", "Il faut 3 terrains !");
+        return;
+    }
+
+    if (!loadHeightmapsBinary(meshes[0]->heightmapImage,
+                              meshes[1]->heightmapImage,
+                              meshes[2]->heightmapImage,
+                              filename)) {
+        QMessageBox::critical(this, "Erreur", "Échec du chargement !");
+        return;
+    }
+
+    qDebug() << meshes[0]->heightmapImage.size();
+    qDebug() << meshes[1]->heightmapImage.size();
+    qDebug() << meshes[2]->heightmapImage.size();
+
+    gl->update();
+    QMessageBox::information(this, "OK", "Terrain chargé !");
+}
+
+
 
 void MainWindow::infos()
 {
