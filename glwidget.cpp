@@ -484,6 +484,8 @@ void GLWidget::drawOnHeightmap(const QVector3D &point, bool invert)
     mesh->heightmap->setData(img);
     mesh->heightmap->bind();
 
+    emit HeightmapChanged(activeMeshIndex, mesh->heightmapImage);
+
     update();
 }
 
@@ -513,7 +515,9 @@ void GLWidget::addMesh(std::unique_ptr<Mesh> mesh, bool perlin)
         QImage img;
 
         if(!perlin){
-            img = QImage(":/textures/heightmap.png");
+            // img = QImage(":/textures/heightmap.png");
+            img = QImage(512, 512, QImage::Format_Grayscale8);
+            img.fill(0);
         } else {
             img = mptr->heightmapImage;
         }

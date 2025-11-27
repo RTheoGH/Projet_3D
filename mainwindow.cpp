@@ -298,6 +298,16 @@ void MainWindow::openMeshDialog()
             p->heightmapImage = perlin_image;
             p2->heightmapImage = perlin_image;
             p3->heightmapImage = perlin_image;
+            emit InitHeightmaps(0, perlin_image);
+            emit InitHeightmaps(1, perlin_image);
+            emit InitHeightmaps(2, perlin_image);
+        }
+        else{
+            QImage newHM = QImage(250, 250, QImage::Format_Grayscale8).scaled(250, 250, Qt::KeepAspectRatio);
+            newHM.fill(0);
+            emit InitHeightmaps(0, newHM);
+            emit InitHeightmaps(1, newHM);
+            emit InitHeightmaps(2, newHM);
         }
 
         w->get_glWidget()->addMesh(std::move(p), perlin);

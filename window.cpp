@@ -81,21 +81,25 @@ Window::Window(MainWindow *mw)
     connect(glWidget, &GLWidget::yRotationChanged, ySlider, &QSlider::setValue);
     connect(glWidget, &GLWidget::zRotationChanged, zSlider, &QSlider::setValue);
 
+    connect(glWidget, &GLWidget::HeightmapChanged, this, &Window::updateHeightmapLabel);
+    connect(mw, &MainWindow::InitHeightmaps, this, &Window::updateHeightmapLabel);
 
     QHBoxLayout *mainLayout = new QHBoxLayout;
 
     QVBoxLayout *heightmaps = new QVBoxLayout;
 
     sand_h = new QLabel;
-    QLabel *water_h = new QLabel;
-    QLabel *lava_h = new QLabel;
+    water_h = new QLabel;
+    lava_h = new QLabel;
 
-    sandImage = QImage(":/textures/heightmap.png").scaled(250, 250, Qt::KeepAspectRatio);
     sand_h->setPixmap(QPixmap::fromImage(sandImage));
     sand_h->installEventFilter(this);
 
-    water_h->setPixmap(QPixmap(":/textures/heightmap.png").scaled(250, 250, Qt::KeepAspectRatio));
-    lava_h->setPixmap(QPixmap(":/textures/heightmap.png").scaled(250, 250, Qt::KeepAspectRatio));
+    water_h->setPixmap(QPixmap::fromImage(waterImage));
+    water_h->installEventFilter(this);
+
+    lava_h->setPixmap(QPixmap::fromImage(lavaImage));
+    lava_h->installEventFilter(this);
 
     heightmaps->addWidget(sand_h);
     heightmaps->addWidget(water_h);
@@ -166,17 +170,23 @@ void Window::mouseDrawOnLabel(QMouseEvent *event, QLabel* label, QImage &img)
 
 bool Window::eventFilter(QObject *obj, QEvent *event)
 {
-    if (obj == sand_h) {
+    if (event->type() == QEvent::MouseButtonPress ||
+        event->type() == QEvent::MouseMove) {
 
-        if (event->type() == QEvent::MouseButtonPress ||
-            event->type() == QEvent::MouseMove) {
-
-            QMouseEvent *mouse = static_cast<QMouseEvent*>(event);
+        QMouseEvent *mouse = static_cast<QMouseEvent*>(event);
+        if (obj == sand_h) {
             mouseDrawOnLabel(mouse, sand_h, sandImage);
-
-            return true;
         }
+        else if(obj == water_h){
+            mouseDrawOnLabel(mouse, water_h, waterImage);
+        }
+        else{
+            mouseDrawOnLabel(mouse, lava_h, lavaImage);
+        }
+
+        return true;
     }
+
 
     return QWidget::eventFilter(obj, event);
 }
@@ -202,5 +212,24 @@ void Window::dockUndock()
         } else {
             QMessageBox::information(0, tr("Cannot dock"), tr("Main window already occupied"));
         }
+    }
+}
+
+void Window::updateHeightmapLabel(int material_index, QImage hm){
+    switch (material_index) {
+    case 0:
+        sandImage = hm.scaled(250, 250, Qt::KeepAspectRatio);
+        sand_h->setPixmap(QPixmap::fromImage(sandImage));
+        break;
+    case 1:
+        waterImage = hm.scaled(250, 250, Qt::KeepAspectRatio);
+        water_h->setPixmap(QPixmap::fromImage(hm.scaled(250, 250, Qt::KeepAspectRatio)));
+        break;
+    case 2:
+        lavaImage = hm.scaled(250, 250, Qt::KeepAspectRatio);
+        lava_h->setPixmap(QPixmap::fromImage(hm.scaled(250, 250, Qt::KeepAspectRatio)));
+        break;
+    default:
+        break;
     }
 }

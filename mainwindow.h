@@ -60,6 +60,9 @@ class MainWindow : public QMainWindow
 public:
     MainWindow();
 
+signals:
+    void InitHeightmaps(int material_index, QImage hm);
+
 private slots:
     void onAddNew();
     void loadMesh();

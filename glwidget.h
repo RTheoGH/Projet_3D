@@ -95,7 +95,7 @@ signals:
     void xRotationChanged(int angle);
     void yRotationChanged(int angle);
     void zRotationChanged(int angle);
-
+    void HeightmapChanged(int material_index, QImage hm);
 
 protected:
     void initializeGL() override;

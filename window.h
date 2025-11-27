@@ -77,6 +77,7 @@ protected:
 
 private slots:
     void dockUndock();
+    void updateHeightmapLabel(int material_index, QImage hm);
 
 private:
     QSlider *createSlider();
@@ -89,7 +90,11 @@ private:
     MainWindow *mainWindow;
 
     QImage sandImage;
+    QImage waterImage;
+    QImage lavaImage;
     QLabel *sand_h;
+    QLabel *water_h;
+    QLabel *lava_h;
 };
 
 #endif
