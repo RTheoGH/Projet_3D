@@ -9,20 +9,24 @@ out vec2 v_uv;
 
 uniform mat4 mvp_matrix;
 uniform mat3 normal_matrix;
-uniform sampler2D heightmap;
+uniform sampler2D current_hm;
+uniform sampler2D heightmapSand;
+uniform sampler2D heightmapWater;
+uniform sampler2D heightmapLava;
+uniform int hm_index;
 
 void main() {
 
     float eps = 0.01;
 
     v_position = vertex.xyz;
-    v_position.y = -texture(heightmap, uv).r;
+    v_position.y = -texture(current_hm, uv).r;
 
-    float hx1 = texture(heightmap, uv + vec2(eps, 0.0)).r;
-    float hy1 = texture(heightmap, uv + vec2(0.0, eps)).r;
+    float hx1 = texture(current_hm, uv + vec2(eps, 0.0)).r;
+    float hy1 = texture(current_hm, uv + vec2(0.0, eps)).r;
 
-    float hx2 = texture(heightmap, uv - vec2(eps, 0.0)).r;
-    float hy2 = texture(heightmap, uv - vec2(0.0, eps)).r;
+    float hx2 = texture(current_hm, uv - vec2(eps, 0.0)).r;
+    float hy2 = texture(current_hm, uv - vec2(0.0, eps)).r;
 
     vec3 dx = vec3(2.0*eps, hx1-hx2, 0.0);
     vec3 dy = vec3(0.0, hy1-hy2, 2.0*eps);

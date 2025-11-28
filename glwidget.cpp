@@ -185,6 +185,9 @@ void GLWidget::initializeGL()
 
     QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
+    glEnable(GL_BLEND);
+    glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
     m_program = new QOpenGLShaderProgram;
     if (!m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/vshader.glsl"))
         close();
@@ -243,29 +246,45 @@ void GLWidget::paintGL()
     m_program->setUniformValue(m_mvp_matrix_loc, m_projection * m_view * m_model);
     m_program->setUniformValue(m_normal_matrix_loc, m_model.normalMatrix());
 
+    int mesh_index = 0;
     for (auto &mptr : scene_meshes) {
         if (!mptr || !mptr->gpu_uploaded) continue;
 
         if (mptr->has_heightmap) {
             glActiveTexture(GL_TEXTURE0);
             mptr->heightmap->bind();
-            // Récupérer la location du sampler une fois (voir initializeGL), sinon :
-            int loc = m_program->uniformLocation("heightmap");
-            m_program->setUniformValue(loc, 0); // texture unit 0
+            int loc = m_program->uniformLocation("current_hm");
+            m_program->setUniformValue(loc, 0);
+            glActiveTexture(GL_TEXTURE1);
+            scene_meshes[0]->heightmap->bind();
+            int locSand = m_program->uniformLocation("heightmapSand");
+            m_program->setUniformValue(locSand, 1);
+            glActiveTexture(GL_TEXTURE2);
+            scene_meshes[1]->heightmap->bind();
+            int locWater = m_program->uniformLocation("heightmapWater");
+            m_program->setUniformValue(locWater, 2);
+            glActiveTexture(GL_TEXTURE3);
+            scene_meshes[2]->heightmap->bind();
+            int locLava = m_program->uniformLocation("heightmapLava");
+            m_program->setUniformValue(locLava, 3);
+
+            int iloc = m_program->uniformLocation("hm_index");
+            m_program->setUniformValue(iloc, mesh_index);
 
             // set height scale (exemple)/*
             int hloc = m_program->uniformLocation("height_scale");
             m_program->setUniformValue(hloc, 3.0f); // ajuste 3.0f comme tu veux*/
         }
         if (!mptr->textureAlbedo.isNull()){
-            glActiveTexture(GL_TEXTURE1);
+            glActiveTexture(GL_TEXTURE4);
             mptr->albedo->bind();
             int loc = m_program->uniformLocation("albedo");
-            m_program->setUniformValue(loc, 1);
+            m_program->setUniformValue(loc, 4);
         }
 
         QOpenGLVertexArrayObject::Binder vaoBinder(mptr->vao.get());
         glDrawElements(GL_TRIANGLES, mptr->triangles.size(), GL_UNSIGNED_INT, nullptr);
+        mesh_index++;
     }
 
 

@@ -167,7 +167,7 @@ bool Mesh::saveAllHeightmaps(const QString& dir)
     if (!d.exists())
         QDir().mkdir(dir);
 
-    for (int i = 0; i < layers.size(); ++i)
+    for (unsigned int i = 0; i < layers.size(); ++i)
     {
         QString filename;
 
