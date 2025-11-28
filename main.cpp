@@ -79,13 +79,16 @@ int main(int argc, char *argv[])
 
     QSurfaceFormat fmt;
     fmt.setDepthBufferSize(24);
+    fmt.setAlphaBufferSize(8);
+    fmt.setVersion(4, 3);
+    fmt.setProfile(QSurfaceFormat::CoreProfile);
+    fmt.setRenderableType(QSurfaceFormat::OpenGL);
+
     if (parser.isSet(multipleSampleOption))
         fmt.setSamples(4);
-    if (parser.isSet(coreProfileOption)) {
-        fmt.setVersion(3, 2);
-        fmt.setProfile(QSurfaceFormat::CoreProfile);
-    }
+
     QSurfaceFormat::setDefaultFormat(fmt);
+
 
     MainWindow mainWindow;
 

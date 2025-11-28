@@ -178,21 +178,22 @@ void GLWidget::initializeGL()
 {
     connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &GLWidget::cleanup);
 
-
     initializeOpenGLFunctions();
 //    glClearColor(0, 0, 0, m_transparent ? 0 : 1);
     glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
-
-    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
 
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
     m_program = new QOpenGLShaderProgram;
+    m_compute = new QOpenGLShaderProgram;
     if (!m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/vshader.glsl"))
         close();
 
     if (!m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/fshader.glsl"))
+        close();
+
+    if (!m_compute->addShaderFromSourceFile(QOpenGLShader::Compute, ":/shaders/cshader.comp"))
         close();
 
     m_program->bindAttributeLocation("vertex", 0);
@@ -202,8 +203,30 @@ void GLWidget::initializeGL()
     if (!m_program->link())
         close();
 
+    if (!m_compute->link())
+        close();
+
     if (!m_program->bind())
         close();
+
+    if (!m_compute->bind())
+        close();
+
+    f = context()->versionFunctions<QOpenGLFunctions_4_3_Core>();
+    if (!f) {
+        runCompute = false;
+        qWarning() << "Compute shader impossible.";
+    }
+    else{
+        runCompute = true;
+        f->initializeOpenGLFunctions();
+    }
+
+    int locAlbedo = m_program->uniformLocation("albedo");
+    if (locAlbedo >= 0) m_program->setUniformValue(locAlbedo, 4); // ex unité 4
+
+    int locCurrentHm = m_program->uniformLocation("current_hm");
+    if (locCurrentHm >= 0) m_program->setUniformValue(locCurrentHm, 0); // unité 0
 
     m_mvp_matrix_loc = m_program->uniformLocation("mvp_matrix");
     m_normal_matrix_loc = m_program->uniformLocation("normal_matrix");
@@ -251,6 +274,44 @@ void GLWidget::paintGL()
         if (!mptr || !mptr->gpu_uploaded) continue;
 
         if (mptr->has_heightmap) {
+
+            if (runCompute) {
+
+                glActiveTexture(GL_TEXTURE0);
+                mptr->heightmap->bind();
+
+                f->glBindImageTexture(
+                    0,
+                    mptr->heightmap->textureId(),
+                    0,
+                    GL_FALSE,
+                    0,
+                    GL_READ_WRITE,
+                    GL_R8
+                );
+
+                f->glDispatchCompute((mptr->heightmapImage.width()+15)/16, (mptr->heightmapImage.height()+15)/16, 1);
+                m_compute->release();
+                f->glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
+
+                // mptr->heightmap->bind();
+
+                // QImage result(mptr->heightmapImage.size(), QImage::Format_Grayscale8);
+
+                // glGetTexImage(
+                //     GL_TEXTURE_2D,
+                //     0,
+                //     GL_RED,
+                //     GL_UNSIGNED_BYTE,
+                //     result.bits()
+                //     );
+
+                // mptr->heightmapImage = result;
+
+            }
+
+
+
             glActiveTexture(GL_TEXTURE0);
             mptr->heightmap->bind();
             int loc = m_program->uniformLocation("current_hm");
@@ -284,10 +345,13 @@ void GLWidget::paintGL()
 
         QOpenGLVertexArrayObject::Binder vaoBinder(mptr->vao.get());
         glDrawElements(GL_TRIANGLES, mptr->triangles.size(), GL_UNSIGNED_INT, nullptr);
+
+        qDebug() << "draw mesh idx" << mesh_index << "gpu_uploaded" << mptr->gpu_uploaded;
+
         mesh_index++;
     }
 
-
+    qDebug() << "GL error : " << glGetError();
     m_program->release();
 }
 
@@ -375,7 +439,7 @@ QVector3D GLWidget::screenPosToPlane(const QPoint &pos)
 {
     if (scene_meshes.empty()) return QVector3D();
 
-    // 1️⃣ Calculer le rayon depuis l'écran
+    // 1️ Calculer le rayon depuis l'écran
     float nx = 2.0f * pos.x() / width() - 1.0f;
     float ny = 1.0f - 2.0f * pos.y() / height();
 
@@ -395,7 +459,7 @@ QVector3D GLWidget::screenPosToPlane(const QPoint &pos)
 
     QVector3D cam_pos = (view.inverted() * QVector4D(0,0,0,1)).toVector3D();
 
-    // 2️⃣ Parcourir les triangles du mesh pour trouver intersection
+    // 2️ Parcourir les triangles du mesh pour trouver intersection
     Mesh* mesh = nullptr;
     for (auto &m : scene_meshes) {
         if (m->has_heightmap) {
@@ -546,7 +610,27 @@ void GLWidget::addMesh(std::unique_ptr<Mesh> mesh, bool perlin)
         } else {
 
             mptr->heightmapImage = img.convertToFormat(QImage::Format_Grayscale8);
-            mptr->heightmap = new QOpenGLTexture(img);
+            // mptr->heightmap = new QOpenGLTexture(img);
+
+            if (!mptr->heightmap) {
+                mptr->heightmap = new QOpenGLTexture(QOpenGLTexture::Target2D);
+            }
+
+            mptr->heightmap->setSize(mptr->heightmapImage.width(),
+                                     mptr->heightmapImage.height());
+
+            mptr->heightmap->setFormat(QOpenGLTexture::R8_UNorm);
+
+            mptr->heightmap->setMinificationFilter(QOpenGLTexture::Linear);
+            mptr->heightmap->setMagnificationFilter(QOpenGLTexture::Linear);
+            mptr->heightmap->setWrapMode(QOpenGLTexture::ClampToEdge);
+
+            // Allocation de la mémoire GPU
+            mptr->heightmap->allocateStorage();
+
+            // Upload (QImage → GPU)
+            mptr->heightmap->setData(QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::UInt8, mptr->heightmapImage.constBits());
+
             mptr->heightmap->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
             mptr->heightmap->setMagnificationFilter(QOpenGLTexture::Linear);
             mptr->heightmap->generateMipMaps();

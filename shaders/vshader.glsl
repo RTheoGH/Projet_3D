@@ -1,4 +1,4 @@
-#version 330 core
+#version 430 core
 in vec4 vertex;
 in vec3 normal;
 in vec2 uv;
