@@ -72,12 +72,15 @@ public:
 
 protected:
     void keyPressEvent(QKeyEvent *event) override;
-    void mouseDrawOnLabel(QMouseEvent *event, QLabel* label, QImage &img);
+    void mouseDrawOnLabel(QMouseEvent *event, QLabel* label, QImage &img, int label_index);
     bool eventFilter(QObject *obj, QEvent *event) override;
 
 private slots:
     void dockUndock();
     void updateHeightmapLabel(int material_index, QImage hm);
+
+signals:
+    void onPixmapChanged(int hm_index, QImage hm);
 
 private:
     QSlider *createSlider();

@@ -88,6 +88,8 @@ public slots:
     void setBrushRadius(int radius) { m_brush_radius = radius; }
     void setBrushStrength(int strength) { m_brush_strength = strength; }
     void setActiveMesh(int index);
+    void onHeightmapsChanged(QImage hm_sand, QImage hm_water, QImage hm_lava);
+    void onHeightmapChanged(int hm_index, QImage hm);
 
 signals:
 

@@ -83,6 +83,9 @@ Window::Window(MainWindow *mw)
 
     connect(glWidget, &GLWidget::HeightmapChanged, this, &Window::updateHeightmapLabel);
     connect(mw, &MainWindow::InitHeightmaps, this, &Window::updateHeightmapLabel);
+    connect(mw, &MainWindow::SceneLoaded, glWidget, &GLWidget::onHeightmapsChanged);
+
+    connect(this, &Window::onPixmapChanged, glWidget, &GLWidget::onHeightmapChanged);
 
     QHBoxLayout *mainLayout = new QHBoxLayout;
 
@@ -150,7 +153,7 @@ void Window::keyPressEvent(QKeyEvent *e)
         QWidget::keyPressEvent(e);
 }
 
-void Window::mouseDrawOnLabel(QMouseEvent *event, QLabel* label, QImage &img)
+void Window::mouseDrawOnLabel(QMouseEvent *event, QLabel* label, QImage &img, int label_index)
 {
     int x = event->x() * img.width() / label->width();
     int y = event->y() * img.height() / label->height();
@@ -160,11 +163,14 @@ void Window::mouseDrawOnLabel(QMouseEvent *event, QLabel* label, QImage &img)
             int nx = x + i;
             int ny = y + j;
             if (nx >= 0 && nx < img.width() && ny >= 0 && ny < img.height()) {
-                img.setPixel(nx, ny, qRgb(255, 255, 255));
+                QRgb value = img.pixel(nx, ny);
+                value += 2;
+                img.setPixel(nx, ny, qRgb(value, value, value));
             }
         }
     }
 
+    emit onPixmapChanged(label_index, img);
     label->setPixmap(QPixmap::fromImage(img));
 }
 
@@ -175,13 +181,13 @@ bool Window::eventFilter(QObject *obj, QEvent *event)
 
         QMouseEvent *mouse = static_cast<QMouseEvent*>(event);
         if (obj == sand_h) {
-            mouseDrawOnLabel(mouse, sand_h, sandImage);
+            mouseDrawOnLabel(mouse, sand_h, sandImage, 0);
         }
         else if(obj == water_h){
-            mouseDrawOnLabel(mouse, water_h, waterImage);
+            mouseDrawOnLabel(mouse, water_h, waterImage, 1);
         }
         else{
-            mouseDrawOnLabel(mouse, lava_h, lavaImage);
+            mouseDrawOnLabel(mouse, lava_h, lavaImage, 2);
         }
 
         return true;

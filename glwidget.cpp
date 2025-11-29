@@ -569,3 +569,40 @@ const std::vector<std::unique_ptr<Mesh>>& GLWidget::get_scene_meshes() const
 {
     return scene_meshes;
 }
+
+void GLWidget::onHeightmapsChanged(QImage hm_sand, QImage hm_water, QImage hm_lava){
+    if(scene_meshes.size() < 3){
+        qDebug() << "Pas de plane";
+    } else {
+        scene_meshes[0]->heightmapImage = hm_sand;
+        scene_meshes[1]->heightmapImage = hm_water;
+        scene_meshes[2]->heightmapImage = hm_lava;
+
+        int mesh_count = 0;
+        for(auto &mptr : scene_meshes){
+            mptr->heightmap->destroy();
+            mptr->heightmap->setData(mptr->heightmapImage);
+            mptr->heightmap->bind();
+            emit HeightmapChanged(mesh_count, mptr->heightmapImage);
+            mesh_count++;
+        }
+
+
+        update();
+    }
+}
+
+void GLWidget::onHeightmapChanged(int hm_index, QImage hm){
+    if(scene_meshes.size() <= hm_index){
+        qDebug() << "Ajoutez d'abord un terrain";
+        return;
+    } else {
+        scene_meshes[hm_index]->heightmapImage = hm;
+        scene_meshes[hm_index]->heightmap->destroy();
+        scene_meshes[hm_index]->heightmap->setData(scene_meshes[hm_index]->heightmapImage);
+        scene_meshes[hm_index]->heightmap->bind();
+        emit HeightmapChanged(hm_index, scene_meshes[hm_index]->heightmapImage);
+
+        update();
+    }
+}

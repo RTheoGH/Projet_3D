@@ -502,6 +502,8 @@ void MainWindow::loadTerrainBinary()
     qDebug() << meshes[1]->heightmapImage.size();
     qDebug() << meshes[2]->heightmapImage.size();
 
+    emit SceneLoaded(meshes[0]->heightmapImage, meshes[1]->heightmapImage, meshes[2]->heightmapImage);
+
     gl->update();
     QMessageBox::information(this, "OK", "Terrain chargé !");
 }
