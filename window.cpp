@@ -170,8 +170,9 @@ void Window::mouseDrawOnLabel(QMouseEvent *event, QLabel* label, QImage &img, in
             int nx = x + i;
             int ny = y + j;
             if (nx >= 0 && nx < img.width() && ny >= 0 && ny < img.height()) {
-                QRgb value = img.pixel(nx, ny);
+                int value = qRed(img.pixel(nx, ny));
                 value += 2;
+                value = std::clamp(value, 0, 255);
                 img.setPixel(nx, ny, qRgb(value, value, value));
             }
         }
