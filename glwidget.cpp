@@ -409,7 +409,7 @@ QVector3D GLWidget::screenPosToPlane(const QPoint &pos)
 
     QVector3D cam_pos = (view.inverted() * QVector4D(0,0,0,1)).toVector3D();
 
-    // 2️⃣ Parcourir les triangles du mesh pour trouver intersection
+    // Parcourir les triangles du mesh pour trouver intersection
     Mesh* mesh = nullptr;
     for (auto &m : scene_meshes) {
         if (m->has_heightmap) {
@@ -588,6 +588,9 @@ void GLWidget::addMesh(std::unique_ptr<Mesh> mesh, bool perlin)
         mptr->albedo = new QOpenGLTexture(mptr->textureAlbedo);
         mptr->albedo->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
         mptr->albedo->setMagnificationFilter(QOpenGLTexture::Linear);
+
+        //mptr->heightmap->setWrapMode(QOpenGLTexture::ClampToEdge);
+
         mptr->albedo->generateMipMaps();
     }
 
