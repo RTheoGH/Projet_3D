@@ -288,9 +288,9 @@ void GLWidget::paintGL()
         mesh_index++;
     }
 
-    if(m_showBrushPreview){
-        drawBrushPreview();
-    }
+    // if(m_showBrushPreview){
+    //     drawBrushPreview();
+    // }
     m_program->release();
 }
 
@@ -313,7 +313,9 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
         // Dessin
         m_drawing = true;
         QVector3D pointOnPlane = screenPosToPlane(event->pos());
-        drawOnHeightmap(pointOnPlane, false);
+        if (!pointOnPlane.isNull()) {
+            drawOnHeightmap(pointOnPlane, false);
+        }
     } else if (!(ctrlPressed) && event->buttons() & Qt::RightButton) {
         // Dessin
         m_drawing = true;
@@ -352,7 +354,9 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
     else if (m_drawing && (event->buttons() & Qt::LeftButton)) {
         // Dessin
         QVector3D pointOnPlane = screenPosToPlane(event->pos());
-        drawOnHeightmap(pointOnPlane, false);
+        if (!pointOnPlane.isNull()) {
+            drawOnHeightmap(pointOnPlane, false);
+        }
     }
     else if (m_drawing && (event->buttons() & Qt::RightButton)) {
         // Dessin
@@ -431,6 +435,17 @@ QVector3D GLWidget::screenPosToPlane(const QPoint &pos)
                 closest_point = cam_pos + t * ray_world;
             }
         }
+    }
+
+    // float halfX = 10.0f / 2.0f; // sizeX
+    // float halfZ = 10.0f / 2.0f; // sizeZ
+    // if (closest_t == std::numeric_limits<float>::max()) {
+    //     closest_point.setX(qBound(-halfX, cam_pos.x() + ray_world.x() * 10.0f, halfX));
+    //     closest_point.setZ(qBound(-halfZ, cam_pos.z() + ray_world.z() * 10.0f, halfZ));
+    //     closest_point.setY(0.0f);
+    // }
+    if (closest_t == std::numeric_limits<float>::max()) {
+        return QVector3D();
     }
 
     return closest_point;
@@ -531,8 +546,6 @@ void GLWidget::setActiveMesh(int index)
         activeMeshIndex = index;
     }
 }
-
-
 
 void GLWidget::addMesh(std::unique_ptr<Mesh> mesh, bool perlin)
 {
