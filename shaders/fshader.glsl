@@ -1,4 +1,4 @@
-#version 430 core
+#version 330 core
 in vec3 v_position;
 in vec3 v_normal;
 in vec2 v_uv;
