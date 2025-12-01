@@ -91,6 +91,9 @@ public slots:
     void onHeightmapsChanged(QImage hm_sand, QImage hm_water, QImage hm_lava);
     void onHeightmapChanged(int hm_index, QImage hm);
 
+    void setBrushShapeSquare() { m_brushShape = "Square"; }
+    void setBrushShapeCircle() { m_brushShape = "Circle"; }
+
 signals:
 
     //Completer : ajouter des signaux pour signaler des changement de rotation
@@ -114,7 +117,7 @@ protected:
         const QVector3D &orig, const QVector3D &dir,
         const QVector3D &v0, const QVector3D &v1, const QVector3D &v2,
         float &t, float &u, float &v);
-
+    void drawBrushPreview();
 private:
     // void setupVertexAttribs();
 
@@ -149,6 +152,9 @@ private:
 
     int activeMeshIndex = 0;
 
+    QString m_brushShape = "Square";
+    QVector3D m_brushPreviewPos;
+    bool m_showBrushPreview = false;
 };
 
 #endif

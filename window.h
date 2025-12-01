@@ -79,6 +79,13 @@ private slots:
     void dockUndock();
     void updateHeightmapLabel(int material_index, QImage hm);
 
+public slots:
+    void setBrushRadius(int radius) { m_brush_radius = radius; }
+    void setBrushStrength(int strength) { m_brush_strength = strength; }
+
+    void setBrushShapeSquare() { m_brushShape = "Square"; }
+    void setBrushShapeCircle() { m_brushShape = "Circle"; }
+
 signals:
     void onPixmapChanged(int hm_index, QImage hm);
 
@@ -98,6 +105,10 @@ private:
     QLabel *sand_h;
     QLabel *water_h;
     QLabel *lava_h;
+
+    int m_brush_radius;
+    int m_brush_strength;
+    QString m_brushShape;
 };
 
 #endif

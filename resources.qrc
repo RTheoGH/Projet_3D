@@ -11,5 +11,7 @@
         <file>icons/lava.png</file>
         <file>icons/sand.png</file>
         <file>icons/water.png</file>
+        <file>icons/circle.png</file>
+        <file>icons/square.png</file>
     </qresource>
 </RCC>

@@ -129,6 +129,27 @@ MainWindow::MainWindow()
 
     addToolBar(Qt::LeftToolBarArea, toolbar2);
 
+    toolbar2->addSeparator();
+
+    QActionGroup *brushGroup = new QActionGroup(this);
+    brushGroup->setExclusive(true);
+
+    QAction *square = new QAction(QIcon(":/icons/square.png"), tr("Square"), this);
+    QAction *circle = new QAction(QIcon(":/icons/circle.png"), tr("Circle"), this);
+
+    square->setCheckable(true);
+    circle->setCheckable(true);
+
+    brushGroup->addAction(square);
+    brushGroup->addAction(circle);
+
+    square->setChecked(true);
+
+    toolbar2->addAction(square);
+    toolbar2->addAction(circle);
+
+    toolbar2->addSeparator();
+
     QWidget *sliderWidget = new QWidget;
     QVBoxLayout *sliderLayout = new QVBoxLayout;
     sliderLayout->setContentsMargins(5,5,5,5);
@@ -168,11 +189,17 @@ MainWindow::MainWindow()
         GLWidget* gl = w->get_glWidget();
         connect(radiusSlider, &QSlider::valueChanged, gl, &GLWidget::setBrushRadius);
         connect(strengthSlider, &QSlider::valueChanged, gl, &GLWidget::setBrushStrength);
+        connect(radiusSlider, &QSlider::valueChanged, w, &Window::setBrushRadius);
+        connect(strengthSlider, &QSlider::valueChanged, w, &Window::setBrushStrength);
 
         connect(sand, &QAction::triggered, this, [gl]() { gl->setActiveMesh(0); });
         connect(water, &QAction::triggered, this, [gl]() { gl->setActiveMesh(1); });
         connect(lava, &QAction::triggered, this, [gl]() { gl->setActiveMesh(2); });
 
+        connect(square, &QAction::triggered, gl, &GLWidget::setBrushShapeSquare);
+        connect(circle, &QAction::triggered, gl, &GLWidget::setBrushShapeCircle);
+        connect(square, &QAction::triggered, w, &Window::setBrushShapeSquare);
+        connect(circle, &QAction::triggered, w, &Window::setBrushShapeCircle);
     }
 }
 

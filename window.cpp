@@ -158,8 +158,15 @@ void Window::mouseDrawOnLabel(QMouseEvent *event, QLabel* label, QImage &img, in
     int x = event->x() * img.width() / label->width();
     int y = event->y() * img.height() / label->height();
 
-    for (int i = -5; i <= 5; ++i) {
-        for (int j = -5; j <= 5; ++j) {
+    for (int i = -m_brush_radius; i <= m_brush_radius; ++i) {
+        for (int j = -m_brush_radius; j <= m_brush_radius; ++j) {
+
+            if (m_brushShape == "Circle"){
+                if(i*i + j*j > m_brush_radius * m_brush_radius){
+                    continue;
+                }
+            }
+
             int nx = x + i;
             int ny = y + j;
             if (nx >= 0 && nx < img.width() && ny >= 0 && ny < img.height()) {

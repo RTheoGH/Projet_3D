@@ -58,6 +58,7 @@
 #include <QTextStream>
 #include <QVector3D>
 #include <QMessageBox>
+#include <QPainter>
 
 #include "maillage.h"
 
@@ -287,7 +288,9 @@ void GLWidget::paintGL()
         mesh_index++;
     }
 
-
+    if(m_showBrushPreview){
+        drawBrushPreview();
+    }
     m_program->release();
 }
 
@@ -356,12 +359,19 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         QVector3D pointOnPlane = screenPosToPlane(event->pos());
         drawOnHeightmap(pointOnPlane, true);
     }
+
+    QVector3D p = screenPosToPlane(event->pos());
+    m_brushPreviewPos = p;
+    m_showBrushPreview = true;
+    update();
 }
 
 void GLWidget::mouseReleaseEvent(QMouseEvent *event)
 {
     Q_UNUSED(event);
     m_drawing = false;
+    m_showBrushPreview = false;
+    update();
 }
 
 void GLWidget::wheelEvent(QWheelEvent *event){
@@ -489,6 +499,13 @@ void GLWidget::drawOnHeightmap(const QVector3D &point, bool invert)
 
     for (int i = -m_brush_radius; i <= m_brush_radius; ++i) {
         for (int j = -m_brush_radius; j <= m_brush_radius; ++j) {
+
+            if (m_brushShape == "Circle"){
+                if(i*i + j*j > m_brush_radius * m_brush_radius){
+                    continue;
+                }
+            }
+
             int nx = x + i;
             int ny = y + j;
             if (nx >= 0 && nx < img.width() && ny >= 0 && ny < img.height()) {
@@ -604,5 +621,37 @@ void GLWidget::onHeightmapChanged(int hm_index, QImage hm){
         emit HeightmapChanged(hm_index, scene_meshes[hm_index]->heightmapImage);
 
         update();
+    }
+}
+
+void GLWidget::drawBrushPreview()
+{
+    if (!m_showBrushPreview)
+        return;
+
+    QPainter painter(this);
+    painter.setRenderHint(QPainter::Antialiasing);
+    painter.setPen(QPen(Qt::red, 2));
+
+    float sizeX = 10.0f;
+    float sizeZ = 10.0f;
+
+    Mesh *mesh = scene_meshes[activeMeshIndex].get();
+    if (!mesh) return;
+
+    QImage &img = mesh->heightmapImage;
+
+    int x = ((m_brushPreviewPos.x() + sizeX / 2.0f) / sizeX) * img.width();
+    int y = ((m_brushPreviewPos.z() + sizeZ / 2.0f) / sizeZ) * img.height();
+
+    float sx = float(width())  / img.width();
+    float sy = float(height()) / img.height();
+
+    int r = m_brush_radius * sx;
+
+    if (m_brushShape == "Circle") {
+        painter.drawEllipse(QPoint(x * sx, y * sy), r, r);
+    } else {
+        painter.drawRect(x * sx - r, y * sy - r, 2*r, 2*r);
     }
 }
