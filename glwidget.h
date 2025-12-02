@@ -90,6 +90,7 @@ public slots:
     void setBrushRadius(int radius) { m_brush_radius = radius; }
     void setBrushStrength(int strength) { m_brush_strength = strength; }
     void setActiveMesh(int index);
+    void timerEvent(QTimerEvent*) override;
 
 signals:
 

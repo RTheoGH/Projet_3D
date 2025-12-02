@@ -58,6 +58,7 @@
 #include <QTextStream>
 #include <QVector3D>
 #include <QMessageBox>
+#include <QTimer>
 
 #include "maillage.h"
 
@@ -158,7 +159,12 @@ void GLWidget::cleanup()
 
     for (auto &mptr : scene_meshes) {
         if (!mptr) continue;
-        if (mptr->has_heightmap) { delete mptr->heightmap; mptr->heightmap = nullptr; }
+        if (mptr->has_heightmap) {
+            delete mptr->heightmapA;
+            delete mptr->heightmapB;
+            mptr->heightmapA = nullptr;
+            mptr->heightmapB = nullptr;
+        }
         if (mptr->vao) mptr->vao->destroy();
         if (mptr->vbo_pos) mptr->vbo_pos->destroy();
         if (mptr->vbo_norm) mptr->vbo_norm->destroy();
@@ -244,6 +250,18 @@ void GLWidget::initializeGL()
     m_program->setUniformValue(m_light_pos_loc, QVector3D(0, 0, 70));
 
     m_program->release();
+
+    startTimer(16);
+}
+
+void GLWidget::timerEvent(QTimerEvent*){
+    int mesh_index = 0;
+    for(auto &mesh : scene_meshes){
+        emit HeightmapChanged(mesh_index, mesh->heightmapImage);
+        mesh_index++;
+    }
+
+    update();
 }
 
 // void GLWidget::uploadMeshToGPU(Mesh& m)
@@ -276,21 +294,13 @@ void GLWidget::paintGL()
 
         if (mptr->has_heightmap && f && runCompute && m_compute) {
 
+            QOpenGLTexture* readTex  = mptr->isInputA ? mptr->heightmapA : mptr->heightmapB;
+            QOpenGLTexture* writeTex = mptr->isInputA ? mptr->heightmapB : mptr->heightmapA;
+
             m_compute->bind();
 
-            f->glBindImageTexture(
-                0,
-                mptr->heightmap->textureId(),
-                0,
-                GL_FALSE,
-                0,
-                GL_READ_WRITE,
-                GL_R8
-            );
-
-            // m_compute->setUniformValue();
-
-            // qDebug() << mptr->heightmapImage.width() << mptr->heightmapImage.height();
+            f->glBindImageTexture(0, readTex->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
+            f->glBindImageTexture(1, writeTex->textureId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R8);
 
             int gx = (mptr->heightmapImage.width() + 15) / 16;
             int gy = (mptr->heightmapImage.height() + 15) / 16;
@@ -300,46 +310,38 @@ void GLWidget::paintGL()
 
             m_program->bind();
 
-            mptr->heightmap->bind();
-
+            // récup du result
             QImage result(mptr->heightmapImage.size(), QImage::Format_Grayscale8);
-
-            glGetTexImage(
-                GL_TEXTURE_2D,
-                0,
-                GL_RED,
-                GL_UNSIGNED_BYTE,
-                result.bits()
-                );
-
+            glBindTexture(GL_TEXTURE_2D, writeTex->textureId());
+            glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, result.bits());
             mptr->heightmapImage = result;
 
-            if(mptr->has_heightmap && mptr->heightmap){
-                glActiveTexture(GL_TEXTURE0);
-                mptr->heightmap->bind();
-                int loc = m_program->uniformLocation("current_hm");
-                m_program->setUniformValue(loc, 0);
-            }
+            writeTex->bind();
+
+            glActiveTexture(GL_TEXTURE0);
+            writeTex->bind();
+            int loc = m_program->uniformLocation("current_hm");
+            m_program->setUniformValue(loc, 0);
+
+
 
             glActiveTexture(GL_TEXTURE1);
-            scene_meshes[0]->heightmap->bind();
-            int locSand = m_program->uniformLocation("heightmapSand");
-            m_program->setUniformValue(locSand, 1);
+            (scene_meshes[0]->isInputA ? scene_meshes[0]->heightmapA : scene_meshes[0]->heightmapB)->bind();
+            m_program->setUniformValue(m_program->uniformLocation("heightmapSand"), 1);
+
             glActiveTexture(GL_TEXTURE2);
-            scene_meshes[1]->heightmap->bind();
-            int locWater = m_program->uniformLocation("heightmapWater");
-            m_program->setUniformValue(locWater, 2);
+            (scene_meshes[1]->isInputA ? scene_meshes[1]->heightmapA : scene_meshes[1]->heightmapB)->bind();
+            m_program->setUniformValue(m_program->uniformLocation("heightmapWater"), 2);
+
             glActiveTexture(GL_TEXTURE3);
-            scene_meshes[2]->heightmap->bind();
-            int locLava = m_program->uniformLocation("heightmapLava");
-            m_program->setUniformValue(locLava, 3);
+            (scene_meshes[2]->isInputA ? scene_meshes[2]->heightmapA : scene_meshes[2]->heightmapB)->bind();
+            m_program->setUniformValue(m_program->uniformLocation("heightmapLava"), 3);
 
-            int iloc = m_program->uniformLocation("hm_index");
-            m_program->setUniformValue(iloc, mesh_index);
+            m_program->setUniformValue(m_program->uniformLocation("hm_index"), mesh_index);
+            m_program->setUniformValue(m_program->uniformLocation("height_scale"), 3.0f);
 
-            // set height scale (exemple)/*
-            int hloc = m_program->uniformLocation("height_scale");
-            m_program->setUniformValue(hloc, 3.0f);
+            mptr->isInputA = !mptr->isInputA;
+
         }
         if (!mptr->textureAlbedo.isNull()){
             glActiveTexture(GL_TEXTURE4);
@@ -530,51 +532,45 @@ void GLWidget::drawOnHeightmap(const QVector3D &point, bool invert)
 {
     if (scene_meshes.empty()) return;
 
-//    Mesh *mesh = nullptr;
-//    for (auto &m : scene_meshes) {
-//        if (m->has_heightmap) {
-//            mesh = m.get();
-//            break;
-//        }
-//    }
-//    if (!mesh || !mesh->heightmap) return;
-
     Mesh *mesh = scene_meshes[activeMeshIndex].get();
-    if (!mesh || !mesh->heightmap) return;
+    if (!mesh || !mesh->heightmapA || !mesh->heightmapB) return;
 
     QImage &img = mesh->heightmapImage;
 
     float sizeX = 10.0f;
     float sizeZ = 10.0f;
 
-    int x = ((point.x() + sizeX / 2.0f) / sizeX) * img.width();
-    int y = ((point.z() + sizeZ / 2.0f) / sizeZ) * img.height();
+    int x = ((point.x() + sizeX * 0.5f) / sizeX) * img.width();
+    int y = ((point.z() + sizeZ * 0.5f) / sizeZ) * img.height();
 
     x = qBound(0, x, img.width() - 1);
     y = qBound(0, y, img.height() - 1);
 
     int delta = invert ? -m_brush_strength : m_brush_strength;
 
-    for (int i = -m_brush_radius; i <= m_brush_radius; ++i) {
-        for (int j = -m_brush_radius; j <= m_brush_radius; ++j) {
-            int nx = x + i;
-            int ny = y + j;
+    for (int i = -m_brush_radius; i <= m_brush_radius; ++i)
+        for (int j = -m_brush_radius; j <= m_brush_radius; ++j)
+        {
+            int nx = x + i, ny = y + j;
             if (nx >= 0 && nx < img.width() && ny >= 0 && ny < img.height()) {
-                int value = qGray(img.pixel(nx, ny));
-                value = qBound(0, value + delta, 255);
-                img.setPixel(nx, ny, qRgb(value, value, value));
+                int px = qGray(img.pixel(nx, ny));
+                px = qBound(0, px + delta, 255);
+                img.setPixel(nx, ny, qRgb(px, px, px));
             }
         }
-    }
 
-    mesh->heightmap->destroy();
-    mesh->heightmap->setData(img);
-    mesh->heightmap->bind();
+    // IMPORTANT : mettre à jour la texture que le compute lira à la prochaine frame
+    QOpenGLTexture* texToUpdate = mesh->isInputA ? mesh->heightmapA
+                                                 : mesh->heightmapB;
+
+    texToUpdate->bind();
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, img.width(), img.height(), GL_RED, GL_UNSIGNED_BYTE, img.constBits());
 
     emit HeightmapChanged(activeMeshIndex, mesh->heightmapImage);
-
     update();
 }
+
+
 
 void GLWidget::setActiveMesh(int index)
 {
@@ -597,7 +593,7 @@ void GLWidget::addMesh(std::unique_ptr<Mesh> mesh, bool perlin)
     Mesh* mptr = scene_meshes.back().get();
 
     // // AUTO : si le mesh veut une heightmap et qu’elle n’est pas encore créée
-    if (mptr->has_heightmap && mptr->heightmap == nullptr) {
+    if (mptr->has_heightmap && mptr->heightmapA == nullptr && mptr->heightmapB == nullptr) {
 
         QImage img;
 
@@ -616,28 +612,25 @@ void GLWidget::addMesh(std::unique_ptr<Mesh> mesh, bool perlin)
             mptr->heightmapImage = img.convertToFormat(QImage::Format_Grayscale8);
             // mptr->heightmap = new QOpenGLTexture(img);
 
-            if (!mptr->heightmap) {
-                mptr->heightmap = new QOpenGLTexture(QOpenGLTexture::Target2D);
-            }
+            mptr->heightmapA = new QOpenGLTexture(QOpenGLTexture::Target2D);
 
-            mptr->heightmap->setSize(mptr->heightmapImage.width(),
-                                     mptr->heightmapImage.height());
+            mptr->heightmapA->setSize(mptr->heightmapImage.width(), mptr->heightmapImage.height());
+            mptr->heightmapA->setFormat(QOpenGLTexture::R8_UNorm);
+            mptr->heightmapA->setMagnificationFilter(QOpenGLTexture::Linear);
+            mptr->heightmapA->setMinificationFilter(QOpenGLTexture::Linear);
+            mptr->heightmapA->setWrapMode(QOpenGLTexture::ClampToEdge);
+            mptr->heightmapA->allocateStorage();
+            mptr->heightmapA->setData(QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::UInt8, mptr->heightmapImage.constBits());
 
-            mptr->heightmap->setFormat(QOpenGLTexture::R8_UNorm);
+            mptr->heightmapB = new QOpenGLTexture(QOpenGLTexture::Target2D);
 
-            mptr->heightmap->setMinificationFilter(QOpenGLTexture::Linear);
-            mptr->heightmap->setMagnificationFilter(QOpenGLTexture::Linear);
-            mptr->heightmap->setWrapMode(QOpenGLTexture::ClampToEdge);
-
-            // Allocation de la mémoire GPU
-            mptr->heightmap->allocateStorage();
-
-            // Upload (QImage → GPU)
-            mptr->heightmap->setData(QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::UInt8, mptr->heightmapImage.constBits());
-
-            // mptr->heightmap->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
-            mptr->heightmap->setMagnificationFilter(QOpenGLTexture::Linear);
-            mptr->heightmap->generateMipMaps();
+            mptr->heightmapB->setSize(mptr->heightmapImage.width(), mptr->heightmapImage.height());
+            mptr->heightmapB->setFormat(QOpenGLTexture::R8_UNorm);
+            mptr->heightmapB->setMagnificationFilter(QOpenGLTexture::Linear);
+            mptr->heightmapB->setMinificationFilter(QOpenGLTexture::Linear);
+            mptr->heightmapB->setWrapMode(QOpenGLTexture::ClampToEdge);
+            mptr->heightmapB->allocateStorage();
+            mptr->heightmapB->setData(QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::UInt8, mptr->heightmapImage.constBits());
         }
     }
 

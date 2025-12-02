@@ -77,7 +77,9 @@ public:
     Mesh& operator=(Mesh&&) = default;
 
     bool has_heightmap = false;
-    QOpenGLTexture* heightmap = nullptr;
+    QOpenGLTexture* heightmapA = nullptr;
+    QOpenGLTexture* heightmapB = nullptr;
+    bool isInputA = true;
     QImage heightmapImage;
     QOpenGLTexture* albedo = nullptr;
     QImage textureAlbedo;
