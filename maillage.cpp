@@ -159,6 +159,8 @@ void Mesh::bindBuffers()
     // ebo->release();
 
     gpu_uploaded = true;
+
+    qDebug() << "mesh bound: vertices=" << vertices.size() << "indices=" << triangles.size();
 }
 
 bool Mesh::saveAllHeightmaps(const QString& dir)

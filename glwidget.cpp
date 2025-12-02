@@ -59,6 +59,7 @@
 #include <QVector3D>
 #include <QMessageBox>
 #include <QPainter>
+#include <QTimer>
 
 #include "maillage.h"
 
@@ -159,7 +160,12 @@ void GLWidget::cleanup()
 
     for (auto &mptr : scene_meshes) {
         if (!mptr) continue;
-        if (mptr->has_heightmap) { delete mptr->heightmap; mptr->heightmap = nullptr; }
+        if (mptr->has_heightmap) {
+            delete mptr->heightmapA;
+            delete mptr->heightmapB;
+            mptr->heightmapA = nullptr;
+            mptr->heightmapB = nullptr;
+        }
         if (mptr->vao) mptr->vao->destroy();
         if (mptr->vbo_pos) mptr->vbo_pos->destroy();
         if (mptr->vbo_norm) mptr->vbo_norm->destroy();
@@ -179,21 +185,22 @@ void GLWidget::initializeGL()
 {
     connect(context(), &QOpenGLContext::aboutToBeDestroyed, this, &GLWidget::cleanup);
 
-
     initializeOpenGLFunctions();
 //    glClearColor(0, 0, 0, m_transparent ? 0 : 1);
     glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
 
-    QOpenGLFunctions *f = QOpenGLContext::currentContext()->functions();
-
     glEnable(GL_BLEND);
     glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
-    m_program = new QOpenGLShaderProgram;
+    m_program = new QOpenGLShaderProgram(this);
+    m_compute = new QOpenGLShaderProgram(this);
     if (!m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/vshader.glsl"))
         close();
 
     if (!m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/fshader.glsl"))
+        close();
+
+    if (!m_compute->addShaderFromSourceFile(QOpenGLShader::Compute, ":/shaders/cshader.comp"))
         close();
 
     m_program->bindAttributeLocation("vertex", 0);
@@ -203,8 +210,32 @@ void GLWidget::initializeGL()
     if (!m_program->link())
         close();
 
+    if (!m_compute->link()){
+        qDebug() << "marche pas le compute ff";
+        close();
+    }
+
     if (!m_program->bind())
         close();
+
+    if (!m_compute->bind())
+        close();
+
+    f = context()->versionFunctions<QOpenGLFunctions_4_3_Core>();
+    if (!f) {
+        runCompute = false;
+        qWarning() << "Compute shader impossible.";
+    }
+    else{
+        runCompute = true;
+        f->initializeOpenGLFunctions();
+    }
+
+    int locAlbedo = m_program->uniformLocation("albedo");
+    if (locAlbedo >= 0) m_program->setUniformValue(locAlbedo, 4); // ex unité 4
+
+    int locCurrentHm = m_program->uniformLocation("current_hm");
+    if (locCurrentHm >= 0) m_program->setUniformValue(locCurrentHm, 0); // unité 0
 
     m_mvp_matrix_loc = m_program->uniformLocation("mvp_matrix");
     m_normal_matrix_loc = m_program->uniformLocation("normal_matrix");
@@ -213,7 +244,6 @@ void GLWidget::initializeGL()
     m_vao.create();
     QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
 
-
     m_view.setToIdentity();
     m_view.setToIdentity();
     m_view.translate(0,0,m_zoom);
@@ -221,6 +251,18 @@ void GLWidget::initializeGL()
     m_program->setUniformValue(m_light_pos_loc, QVector3D(0, 0, 70));
 
     m_program->release();
+
+    startTimer(16);
+}
+
+void GLWidget::timerEvent(QTimerEvent*){
+    int mesh_index = 0;
+    for(auto &mesh : scene_meshes){
+        emit HeightmapChanged(mesh_index, mesh->heightmapImage);
+        mesh_index++;
+    }
+
+    update();
 }
 
 // void GLWidget::uploadMeshToGPU(Mesh& m)
@@ -251,30 +293,56 @@ void GLWidget::paintGL()
     for (auto &mptr : scene_meshes) {
         if (!mptr || !mptr->gpu_uploaded) continue;
 
-        if (mptr->has_heightmap) {
+        if (mptr->has_heightmap && f && runCompute && m_compute) {
+
+            QOpenGLTexture* readTex  = mptr->isInputA ? mptr->heightmapA : mptr->heightmapB;
+            QOpenGLTexture* writeTex = mptr->isInputA ? mptr->heightmapB : mptr->heightmapA;
+
+            m_compute->bind();
+
+            f->glBindImageTexture(0, readTex->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
+            f->glBindImageTexture(1, writeTex->textureId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R8);
+
+            int gx = (mptr->heightmapImage.width() + 15) / 16;
+            int gy = (mptr->heightmapImage.height() + 15) / 16;
+            f->glDispatchCompute(gx, gy, 1);
+            f->glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
+            m_compute->release();
+
+            m_program->bind();
+
+            // récup du result
+            QImage result(mptr->heightmapImage.size(), QImage::Format_Grayscale8);
+            glBindTexture(GL_TEXTURE_2D, writeTex->textureId());
+            glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, result.bits());
+            mptr->heightmapImage = result;
+
+            writeTex->bind();
+
             glActiveTexture(GL_TEXTURE0);
-            mptr->heightmap->bind();
+            writeTex->bind();
             int loc = m_program->uniformLocation("current_hm");
             m_program->setUniformValue(loc, 0);
+
+
+
             glActiveTexture(GL_TEXTURE1);
-            scene_meshes[0]->heightmap->bind();
-            int locSand = m_program->uniformLocation("heightmapSand");
-            m_program->setUniformValue(locSand, 1);
+            (scene_meshes[0]->isInputA ? scene_meshes[0]->heightmapA : scene_meshes[0]->heightmapB)->bind();
+            m_program->setUniformValue(m_program->uniformLocation("heightmapSand"), 1);
+
             glActiveTexture(GL_TEXTURE2);
-            scene_meshes[1]->heightmap->bind();
-            int locWater = m_program->uniformLocation("heightmapWater");
-            m_program->setUniformValue(locWater, 2);
+            (scene_meshes[1]->isInputA ? scene_meshes[1]->heightmapA : scene_meshes[1]->heightmapB)->bind();
+            m_program->setUniformValue(m_program->uniformLocation("heightmapWater"), 2);
+
             glActiveTexture(GL_TEXTURE3);
-            scene_meshes[2]->heightmap->bind();
-            int locLava = m_program->uniformLocation("heightmapLava");
-            m_program->setUniformValue(locLava, 3);
+            (scene_meshes[2]->isInputA ? scene_meshes[2]->heightmapA : scene_meshes[2]->heightmapB)->bind();
+            m_program->setUniformValue(m_program->uniformLocation("heightmapLava"), 3);
 
-            int iloc = m_program->uniformLocation("hm_index");
-            m_program->setUniformValue(iloc, mesh_index);
+            m_program->setUniformValue(m_program->uniformLocation("hm_index"), mesh_index);
+            m_program->setUniformValue(m_program->uniformLocation("height_scale"), 3.0f);
 
-            // set height scale (exemple)/*
-            int hloc = m_program->uniformLocation("height_scale");
-            m_program->setUniformValue(hloc, 3.0f); // ajuste 3.0f comme tu veux*/
+            mptr->isInputA = !mptr->isInputA;
+
         }
         if (!mptr->textureAlbedo.isNull()){
             glActiveTexture(GL_TEXTURE4);
@@ -284,13 +352,13 @@ void GLWidget::paintGL()
         }
 
         QOpenGLVertexArrayObject::Binder vaoBinder(mptr->vao.get());
-        glDrawElements(GL_TRIANGLES, mptr->triangles.size(), GL_UNSIGNED_INT, nullptr);
+        glDrawElements(GL_TRIANGLES, (GLsizei)mptr->triangles.size(), GL_UNSIGNED_INT, nullptr);
+
+        // qDebug() << "draw mesh idx" << mesh_index << "gpu_uploaded" << mptr->gpu_uploaded;
+
         mesh_index++;
     }
 
-    // if(m_showBrushPreview){
-    //     drawBrushPreview();
-    // }
     m_program->release();
 }
 
@@ -389,7 +457,7 @@ QVector3D GLWidget::screenPosToPlane(const QPoint &pos)
 {
     if (scene_meshes.empty()) return QVector3D();
 
-    // 1️⃣ Calculer le rayon depuis l'écran
+    // 1️ Calculer le rayon depuis l'écran
     float nx = 2.0f * pos.x() / width() - 1.0f;
     float ny = 1.0f - 2.0f * pos.y() / height();
 
@@ -487,25 +555,16 @@ void GLWidget::drawOnHeightmap(const QVector3D &point, bool invert)
 {
     if (scene_meshes.empty()) return;
 
-//    Mesh *mesh = nullptr;
-//    for (auto &m : scene_meshes) {
-//        if (m->has_heightmap) {
-//            mesh = m.get();
-//            break;
-//        }
-//    }
-//    if (!mesh || !mesh->heightmap) return;
-
     Mesh *mesh = scene_meshes[activeMeshIndex].get();
-    if (!mesh || !mesh->heightmap) return;
+    if (!mesh || !mesh->heightmapA || !mesh->heightmapB) return;
 
     QImage &img = mesh->heightmapImage;
 
     float sizeX = 10.0f;
     float sizeZ = 10.0f;
 
-    int x = ((point.x() + sizeX / 2.0f) / sizeX) * img.width();
-    int y = ((point.z() + sizeZ / 2.0f) / sizeZ) * img.height();
+    int x = ((point.x() + sizeX * 0.5f) / sizeX) * img.width();
+    int y = ((point.z() + sizeZ * 0.5f) / sizeZ) * img.height();
 
     x = qBound(0, x, img.width() - 1);
     y = qBound(0, y, img.height() - 1);
@@ -524,21 +583,24 @@ void GLWidget::drawOnHeightmap(const QVector3D &point, bool invert)
             int nx = x + i;
             int ny = y + j;
             if (nx >= 0 && nx < img.width() && ny >= 0 && ny < img.height()) {
-                int value = qGray(img.pixel(nx, ny));
-                value = qBound(0, value + delta, 255);
-                img.setPixel(nx, ny, qRgb(value, value, value));
+                int px = qGray(img.pixel(nx, ny));
+                px = qBound(0, px + delta, 255);
+                img.setPixel(nx, ny, qRgb(px, px, px));
             }
         }
-    }
 
-    mesh->heightmap->destroy();
-    mesh->heightmap->setData(img);
-    mesh->heightmap->bind();
+    // IMPORTANT : mettre à jour la texture que le compute lira à la prochaine frame
+    QOpenGLTexture* texToUpdate = mesh->isInputA ? mesh->heightmapA
+                                                 : mesh->heightmapB;
+
+    texToUpdate->bind();
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, img.width(), img.height(), GL_RED, GL_UNSIGNED_BYTE, img.constBits());
 
     emit HeightmapChanged(activeMeshIndex, mesh->heightmapImage);
-
     update();
 }
+
+
 
 void GLWidget::setActiveMesh(int index)
 {
@@ -558,8 +620,8 @@ void GLWidget::addMesh(std::unique_ptr<Mesh> mesh, bool perlin)
     scene_meshes.push_back(std::move(mesh));
     Mesh* mptr = scene_meshes.back().get();
 
-    // AUTO : si le mesh veut une heightmap et qu’elle n’est pas encore créée
-    if (mptr->has_heightmap && mptr->heightmap == nullptr) {
+    // // AUTO : si le mesh veut une heightmap et qu’elle n’est pas encore créée
+    if (mptr->has_heightmap && mptr->heightmapA == nullptr && mptr->heightmapB == nullptr) {
 
         QImage img;
 
@@ -576,10 +638,27 @@ void GLWidget::addMesh(std::unique_ptr<Mesh> mesh, bool perlin)
         } else {
 
             mptr->heightmapImage = img.convertToFormat(QImage::Format_Grayscale8);
-            mptr->heightmap = new QOpenGLTexture(img);
-            mptr->heightmap->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
-            mptr->heightmap->setMagnificationFilter(QOpenGLTexture::Linear);
-            mptr->heightmap->generateMipMaps();
+            // mptr->heightmap = new QOpenGLTexture(img);
+
+            mptr->heightmapA = new QOpenGLTexture(QOpenGLTexture::Target2D);
+
+            mptr->heightmapA->setSize(mptr->heightmapImage.width(), mptr->heightmapImage.height());
+            mptr->heightmapA->setFormat(QOpenGLTexture::R8_UNorm);
+            mptr->heightmapA->setMagnificationFilter(QOpenGLTexture::Linear);
+            mptr->heightmapA->setMinificationFilter(QOpenGLTexture::Linear);
+            mptr->heightmapA->setWrapMode(QOpenGLTexture::ClampToEdge);
+            mptr->heightmapA->allocateStorage();
+            mptr->heightmapA->setData(QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::UInt8, mptr->heightmapImage.constBits());
+
+            mptr->heightmapB = new QOpenGLTexture(QOpenGLTexture::Target2D);
+
+            mptr->heightmapB->setSize(mptr->heightmapImage.width(), mptr->heightmapImage.height());
+            mptr->heightmapB->setFormat(QOpenGLTexture::R8_UNorm);
+            mptr->heightmapB->setMagnificationFilter(QOpenGLTexture::Linear);
+            mptr->heightmapB->setMinificationFilter(QOpenGLTexture::Linear);
+            mptr->heightmapB->setWrapMode(QOpenGLTexture::ClampToEdge);
+            mptr->heightmapB->allocateStorage();
+            mptr->heightmapB->setData(QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::UInt8, mptr->heightmapImage.constBits());
         }
     }
 

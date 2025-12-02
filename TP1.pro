@@ -22,6 +22,7 @@ RESOURCES += \
     textures.qrc \
     shaders.qrc
 
-QT           += widgets
+QT           += widgets \
+                core gui opengl
 
 

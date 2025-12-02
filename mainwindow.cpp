@@ -525,9 +525,11 @@ void MainWindow::loadTerrainBinary()
         return;
     }
 
-    qDebug() << meshes[0]->heightmapImage.size();
-    qDebug() << meshes[1]->heightmapImage.size();
-    qDebug() << meshes[2]->heightmapImage.size();
+
+
+    // qDebug() << meshes[0]->heightmapImage.size();
+    // qDebug() << meshes[1]->heightmapImage.size();
+    // qDebug() << meshes[2]->heightmapImage.size();
 
     emit SceneLoaded(meshes[0]->heightmapImage, meshes[1]->heightmapImage, meshes[2]->heightmapImage);
 

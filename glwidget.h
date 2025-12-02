@@ -55,12 +55,14 @@
 #include <QOpenGLFunctions>
 #include <QOpenGLVertexArrayObject>
 #include <QOpenGLBuffer>
+#include <QOpenGLFunctions_4_3_Core>
 #include <QMatrix4x4>
 #include "maillage.h"
 #include <memory>
 #include <vector>
 
 QT_FORWARD_DECLARE_CLASS(QOpenGLShaderProgram)
+QT_FORWARD_DECLARE_CLASS(QOpenGLContext)
 
 class GLWidget : public QOpenGLWidget, protected QOpenGLFunctions
 {
@@ -93,6 +95,7 @@ public slots:
 
     void setBrushShapeSquare() { m_brushShape = "Square"; }
     void setBrushShapeCircle() { m_brushShape = "Circle"; }
+    void timerEvent(QTimerEvent*) override;
 
 signals:
 
@@ -128,6 +131,10 @@ private:
     QPoint m_last_position;
     QOpenGLVertexArrayObject m_vao;
     QOpenGLShaderProgram *m_program;
+    QOpenGLShaderProgram *m_compute = nullptr;
+    QOpenGLContext *m_context = nullptr;
+    QOpenGLFunctions_4_3_Core *f = nullptr;
+    bool runCompute = true;
     int m_mvp_matrix_loc;
     int m_normal_matrix_loc;
     int m_light_pos_loc;
