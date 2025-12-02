@@ -588,10 +588,9 @@ void GLWidget::drawOnHeightmap(const QVector3D &point, bool invert)
                 img.setPixel(nx, ny, qRgb(px, px, px));
             }
         }
+    }
 
-    // IMPORTANT : mettre à jour la texture que le compute lira à la prochaine frame
-    QOpenGLTexture* texToUpdate = mesh->isInputA ? mesh->heightmapA
-                                                 : mesh->heightmapB;
+    QOpenGLTexture* texToUpdate = mesh->isInputA ? mesh->heightmapA : mesh->heightmapB;
 
     texToUpdate->bind();
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, img.width(), img.height(), GL_RED, GL_UNSIGNED_BYTE, img.constBits());
@@ -692,9 +691,10 @@ void GLWidget::onHeightmapsChanged(QImage hm_sand, QImage hm_water, QImage hm_la
 
         int mesh_count = 0;
         for(auto &mptr : scene_meshes){
-            mptr->heightmap->destroy();
-            mptr->heightmap->setData(mptr->heightmapImage);
-            mptr->heightmap->bind();
+            QOpenGLTexture* texToUpdate = mptr->isInputA ? mptr->heightmapA : mptr->heightmapB;
+
+            texToUpdate->bind();
+            glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, mptr->heightmapImage.width(), mptr->heightmapImage.height(), GL_RED, GL_UNSIGNED_BYTE, mptr->heightmapImage.constBits());
             emit HeightmapChanged(mesh_count, mptr->heightmapImage);
             mesh_count++;
         }
@@ -709,10 +709,12 @@ void GLWidget::onHeightmapChanged(int hm_index, QImage hm){
         qDebug() << "Ajoutez d'abord un terrain";
         return;
     } else {
+        QOpenGLTexture* texToUpdate = scene_meshes[hm_index]->isInputA ? scene_meshes[hm_index]->heightmapA : scene_meshes[hm_index]->heightmapB;
+
+        texToUpdate->bind();
         scene_meshes[hm_index]->heightmapImage = hm;
-        scene_meshes[hm_index]->heightmap->destroy();
-        scene_meshes[hm_index]->heightmap->setData(scene_meshes[hm_index]->heightmapImage);
-        scene_meshes[hm_index]->heightmap->bind();
+        texToUpdate->bind();
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, scene_meshes[hm_index]->heightmapImage.width(), scene_meshes[hm_index]->heightmapImage.height(), GL_RED, GL_UNSIGNED_BYTE, scene_meshes[hm_index]->heightmapImage.constBits());
         emit HeightmapChanged(hm_index, scene_meshes[hm_index]->heightmapImage);
 
         update();
