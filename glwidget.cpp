@@ -352,6 +352,12 @@ void GLWidget::paintGL()
         }
 
         QOpenGLVertexArrayObject::Binder vaoBinder(mptr->vao.get());
+
+        qDebug() << "[RENDER] mesh" << mesh_index
+                 << "using texture"
+                 << (mptr->isInputA ? "B" : "A");
+
+
         glDrawElements(GL_TRIANGLES, (GLsizei)mptr->triangles.size(), GL_UNSIGNED_INT, nullptr);
 
         // qDebug() << "draw mesh idx" << mesh_index << "gpu_uploaded" << mptr->gpu_uploaded;
@@ -381,6 +387,10 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
         // Dessin
         m_drawing = true;
         QVector3D pointOnPlane = screenPosToPlane(event->pos());
+
+        qDebug() << "[MOUSE] pos écran =" << event->pos()
+                 << " -> pos monde =" << pointOnPlane;
+
         if (!pointOnPlane.isNull()) {
             drawOnHeightmap(pointOnPlane, false);
         }
@@ -555,8 +565,19 @@ void GLWidget::drawOnHeightmap(const QVector3D &point, bool invert)
 {
     if (scene_meshes.empty()) return;
 
+    qDebug() << "[DRAW] activeMeshIndex =" << activeMeshIndex;
+
     Mesh *mesh = scene_meshes[activeMeshIndex].get();
-    if (!mesh || !mesh->heightmapA || !mesh->heightmapB) return;
+
+    if (!mesh) {
+        qDebug() << "Mesh null";
+        return;
+    }
+
+    if (!mesh->heightmapA || !mesh->heightmapB) {
+        qDebug() << "Heightmap textures null";
+        return;
+    }
 
     QImage &img = mesh->heightmapImage;
 
@@ -568,6 +589,11 @@ void GLWidget::drawOnHeightmap(const QVector3D &point, bool invert)
 
     x = qBound(0, x, img.width() - 1);
     y = qBound(0, y, img.height() - 1);
+
+    qDebug() << "[DRAW] point monde =" << point
+             << " -> pixel =" << x << y
+             << " image =" << img.width() << "x" << img.height();
+
 
     int delta = invert ? -m_brush_strength : m_brush_strength;
 
@@ -582,18 +608,40 @@ void GLWidget::drawOnHeightmap(const QVector3D &point, bool invert)
 
             int nx = x + i;
             int ny = y + j;
+
+            if (nx == x && ny == y) {
+                qDebug() << "[PIXEL] avant =" << qGray(img.pixel(nx, ny));
+            }
+
+
             if (nx >= 0 && nx < img.width() && ny >= 0 && ny < img.height()) {
                 int px = qGray(img.pixel(nx, ny));
                 px = qBound(0, px + delta, 255);
                 img.setPixel(nx, ny, qRgb(px, px, px));
             }
+
+            if (nx == x && ny == y) {
+                qDebug() << "[PIXEL] après =" << qGray(img.pixel(nx, ny));
+            }
+
         }
     }
 
     QOpenGLTexture* texToUpdate = mesh->isInputA ? mesh->heightmapA : mesh->heightmapB;
 
     texToUpdate->bind();
+
+    qDebug() << "[GPU] upload texture"
+             << "ID =" << texToUpdate->textureId()
+             << " size =" << img.width() << img.height();
+
+
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, img.width(), img.height(), GL_RED, GL_UNSIGNED_BYTE, img.constBits());
+
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR) {
+        qDebug() << "❌ OpenGL Error après upload:" << err;
+    }
 
     emit HeightmapChanged(activeMeshIndex, mesh->heightmapImage);
     update();
