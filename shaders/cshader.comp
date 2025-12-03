@@ -2,21 +2,29 @@
 
 layout(local_size_x = 16, local_size_y = 16) in;
 
-
-// input (readonly) binding 0
-layout(binding = 0, r8) readonly uniform image2D inputImage;
-// output (writeonly) binding 1
+layout(binding = 0, r8) readonly  uniform image2D inputImage;
 layout(binding = 1, r8) writeonly uniform image2D outputImage;
 
 void main() {
-    ivec2 pix = ivec2(gl_GlobalInvocationID.xy);
-    vec4 pixh = imageLoad(inputImage, ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y-1));
-    vec4 pixb = imageLoad(inputImage, ivec2(gl_GlobalInvocationID.x, gl_GlobalInvocationID.y+1));
-    vec4 pixg = imageLoad(inputImage, ivec2(gl_GlobalInvocationID.x-1, gl_GlobalInvocationID.y));
-    vec4 pixd = imageLoad(inputImage, ivec2(gl_GlobalInvocationID.x+1, gl_GlobalInvocationID.y));
 
-    vec4 color = (imageLoad(inputImage, pix) + pixh + pixb + pixg + pixd)/5.0;
-    color.a = 1.0;
+    ivec2 size = imageSize(inputImage);
+    ivec2 p = ivec2(gl_GlobalInvocationID.xy);
 
-    imageStore(outputImage, pix, color);
+    // clamp bord
+    int x  = clamp(p.x, 0, size.x - 1);
+    int y  = clamp(p.y, 0, size.y - 1);
+    int xm = clamp(p.x - 1, 0, size.x - 1);
+    int xp = clamp(p.x + 1, 0, size.x - 1);
+    int ym = clamp(p.y - 1, 0, size.y - 1);
+    int yp = clamp(p.y + 1, 0, size.y - 1);
+
+    float c = imageLoad(inputImage, ivec2(x, y)).r;
+    float h = imageLoad(inputImage, ivec2(x, ym)).r;
+    float b = imageLoad(inputImage, ivec2(x, yp)).r;
+    float g = imageLoad(inputImage, ivec2(xm, y)).r;
+    float d = imageLoad(inputImage, ivec2(xp, y)).r;
+
+    float avg = (c + h + b + g + d) * 0.2;
+
+    imageStore(outputImage, p, vec4(avg,0,0,1));
 }

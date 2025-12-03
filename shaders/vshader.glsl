@@ -6,6 +6,8 @@ in vec2 uv;
 out vec3 v_position;
 out vec3 v_normal;
 out vec2 v_uv;
+out float v_height;
+out mat4 v_mvp;
 
 uniform mat4 mvp_matrix;
 uniform mat3 normal_matrix;
@@ -14,13 +16,16 @@ uniform sampler2D heightmapSand;
 uniform sampler2D heightmapWater;
 uniform sampler2D heightmapLava;
 uniform int hm_index;
+uniform float height_scale;
+
 
 void main() {
 
     float eps = 0.01;
 
     v_position = vertex.xyz;
-    v_position.y = -texture(current_hm, uv).r;
+    v_height = textureLod(current_hm, v_uv, 0.0).r;
+    v_position.y = -v_height * height_scale;
 
     float hx1 = texture(current_hm, uv + vec2(eps, 0.0)).r;
     float hy1 = texture(current_hm, uv + vec2(0.0, eps)).r;
@@ -35,7 +40,7 @@ void main() {
 
     v_normal = normal_matrix * new_normal;
     v_uv = uv;
+    v_mvp = mvp_matrix;
 
-    // Calculate vertex position in screen space
     gl_Position = mvp_matrix * vec4(v_position, 1);
 }

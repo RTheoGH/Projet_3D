@@ -231,6 +231,7 @@ void GLWidget::initializeGL()
         f->initializeOpenGLFunctions();
     }
 
+    glActiveTexture(GL_TEXTURE4);
     int locAlbedo = m_program->uniformLocation("albedo");
     if (locAlbedo >= 0) m_program->setUniformValue(locAlbedo, 4); // ex unité 4
 
@@ -312,15 +313,19 @@ void GLWidget::paintGL()
             m_program->bind();
 
             // récup du result
-            QImage result(mptr->heightmapImage.size(), QImage::Format_Grayscale8);
-            glBindTexture(GL_TEXTURE_2D, writeTex->textureId());
-            glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, result.bits());
-            mptr->heightmapImage = result;
+            // QImage result(mptr->heightmapImage.size(), QImage::Format_Grayscale8);
+            // glBindTexture(GL_TEXTURE_2D, writeTex->textureId());
+            // f->glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, result.bits());
+            // mptr->heightmapImage = result;
 
-            writeTex->bind();
+
+
+            QOpenGLTexture* texForRender =
+                mptr->isInputA ? mptr->heightmapA : mptr->heightmapB;
 
             glActiveTexture(GL_TEXTURE0);
-            writeTex->bind();
+            glBindTexture(GL_TEXTURE_2D, texForRender->textureId());
+
             int loc = m_program->uniformLocation("current_hm");
             m_program->setUniformValue(loc, 0);
 
@@ -339,9 +344,8 @@ void GLWidget::paintGL()
             m_program->setUniformValue(m_program->uniformLocation("heightmapLava"), 3);
 
             m_program->setUniformValue(m_program->uniformLocation("hm_index"), mesh_index);
-            m_program->setUniformValue(m_program->uniformLocation("height_scale"), 3.0f);
+            m_program->setUniformValue(m_program->uniformLocation("height_scale"), 5.0f);
 
-            mptr->isInputA = !mptr->isInputA;
 
         }
         if (!mptr->textureAlbedo.isNull()){
@@ -353,12 +357,14 @@ void GLWidget::paintGL()
 
         QOpenGLVertexArrayObject::Binder vaoBinder(mptr->vao.get());
 
-        qDebug() << "[RENDER] mesh" << mesh_index
-                 << "using texture"
-                 << (mptr->isInputA ? "B" : "A");
+        // qDebug() << "[RENDER] mesh" << mesh_index
+        //          << "using texture"
+        //          << (mptr->isInputA ? "B" : "A");
 
 
         glDrawElements(GL_TRIANGLES, (GLsizei)mptr->triangles.size(), GL_UNSIGNED_INT, nullptr);
+
+        mptr->isInputA = !mptr->isInputA;
 
         // qDebug() << "draw mesh idx" << mesh_index << "gpu_uploaded" << mptr->gpu_uploaded;
 
@@ -626,22 +632,16 @@ void GLWidget::drawOnHeightmap(const QVector3D &point, bool invert)
 
         }
     }
-
-    QOpenGLTexture* texToUpdate = mesh->isInputA ? mesh->heightmapA : mesh->heightmapB;
+    // avant : QOpenGLTexture* texToUpdate = !mesh->isInputA ? mesh->heightmapA : mesh->heightmapB;
+    QOpenGLTexture* texToUpdate = mesh->isInputA ? mesh->heightmapA : mesh->heightmapB; // <-- important
 
     texToUpdate->bind();
-
-    qDebug() << "[GPU] upload texture"
-             << "ID =" << texToUpdate->textureId()
-             << " size =" << img.width() << img.height();
-
-
-    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, img.width(), img.height(), GL_RED, GL_UNSIGNED_BYTE, img.constBits());
-
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1); // safe
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, img.width(), img.height(),
+                    GL_RED, GL_UNSIGNED_BYTE, img.constBits());
     GLenum err = glGetError();
-    if (err != GL_NO_ERROR) {
-        qDebug() << "❌ OpenGL Error après upload:" << err;
-    }
+    if (err != GL_NO_ERROR) qDebug() << "❌ OpenGL Error après upload:" << err;
+
 
     emit HeightmapChanged(activeMeshIndex, mesh->heightmapImage);
     update();
@@ -696,6 +696,7 @@ void GLWidget::addMesh(std::unique_ptr<Mesh> mesh, bool perlin)
             mptr->heightmapA->setWrapMode(QOpenGLTexture::ClampToEdge);
             mptr->heightmapA->allocateStorage();
             mptr->heightmapA->setData(QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::UInt8, mptr->heightmapImage.constBits());
+            mptr->heightmapA->setAutoMipMapGenerationEnabled(false);
 
             mptr->heightmapB = new QOpenGLTexture(QOpenGLTexture::Target2D);
 
@@ -706,6 +707,7 @@ void GLWidget::addMesh(std::unique_ptr<Mesh> mesh, bool perlin)
             mptr->heightmapB->setWrapMode(QOpenGLTexture::ClampToEdge);
             mptr->heightmapB->allocateStorage();
             mptr->heightmapB->setData(QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::UInt8, mptr->heightmapImage.constBits());
+            mptr->heightmapB->setAutoMipMapGenerationEnabled(false);
         }
     }
 
