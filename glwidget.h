@@ -136,6 +136,7 @@ private:
     QOpenGLFunctions_4_3_Core *f = nullptr;
     bool runCompute = true;
     int m_mvp_matrix_loc;
+    int m_model_matrix_loc;
     int m_normal_matrix_loc;
     int m_light_pos_loc;
     QMatrix4x4 m_projection;
