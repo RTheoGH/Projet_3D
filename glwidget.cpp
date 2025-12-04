@@ -231,12 +231,12 @@ void GLWidget::initializeGL()
         f->initializeOpenGLFunctions();
     }
 
-    glActiveTexture(GL_TEXTURE4);
-    int locAlbedo = m_program->uniformLocation("albedo");
-    if (locAlbedo >= 0) m_program->setUniformValue(locAlbedo, 4); // ex unité 4
+    // glActiveTexture(GL_TEXTURE4);
+    // int locAlbedo = m_program->uniformLocation("albedo");
+    // if (locAlbedo >= 0) m_program->setUniformValue(locAlbedo, 4); // ex unité 4
 
-    int locCurrentHm = m_program->uniformLocation("current_hm");
-    if (locCurrentHm >= 0) m_program->setUniformValue(locCurrentHm, 0); // unité 0
+    // int locCurrentHm = m_program->uniformLocation("current_hm");
+    // if (locCurrentHm >= 0) m_program->setUniformValue(locCurrentHm, 0); // unité 0
 
     m_mvp_matrix_loc = m_program->uniformLocation("mvp_matrix");
     m_model_matrix_loc = m_program->uniformLocation("model_matrix");
@@ -250,7 +250,7 @@ void GLWidget::initializeGL()
     m_view.setToIdentity();
     m_view.translate(0,0,m_zoom);
 
-    m_program->setUniformValue(m_light_pos_loc, QVector3D(0, 0, 20));
+    m_program->setUniformValue(m_light_pos_loc, QVector3D(0, 0, 0));
 
     m_program->release();
 
@@ -292,6 +292,8 @@ void GLWidget::paintGL()
     m_program->setUniformValue(m_normal_matrix_loc, m_model.normalMatrix());
     m_program->setUniformValue(m_model_matrix_loc, m_model);
 
+    QOpenGLTexture* texForRender;
+
     int mesh_index = 0;
     for (auto &mptr : scene_meshes) {
         if (!mptr || !mptr->gpu_uploaded) continue;
@@ -324,8 +326,7 @@ void GLWidget::paintGL()
 
             mptr->isInputA = !mptr->isInputA;
 
-            QOpenGLTexture* texForRender =
-                mptr->isInputA ? mptr->heightmapA : mptr->heightmapB;
+            texForRender = mptr->isInputA ? mptr->heightmapA : mptr->heightmapB;
 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, texForRender->textureId());
@@ -350,21 +351,15 @@ void GLWidget::paintGL()
             m_program->setUniformValue(m_program->uniformLocation("hm_index"), mesh_index);
             m_program->setUniformValue(m_program->uniformLocation("height_scale"), 5.0f);
 
-
-        }
-        if (!mptr->textureAlbedo.isNull()){
             glActiveTexture(GL_TEXTURE4);
             glBindTexture(GL_TEXTURE_2D, mptr->albedo->textureId());
-            int loc = m_program->uniformLocation("albedo");
-            m_program->setUniformValue(loc, 4);
+            int loc_albedo = m_program->uniformLocation("albedo");
+            m_program->setUniformValue(loc_albedo, 4);
+
+
         }
 
         QOpenGLVertexArrayObject::Binder vaoBinder(mptr->vao.get());
-
-        // qDebug() << "[RENDER] mesh" << mesh_index
-        //          << "using texture"
-        //          << (mptr->isInputA ? "B" : "A");
-
 
         glDrawElements(GL_TRIANGLES, (GLsizei)mptr->triangles.size(), GL_UNSIGNED_INT, nullptr);
 
@@ -714,15 +709,24 @@ void GLWidget::addMesh(std::unique_ptr<Mesh> mesh, bool perlin)
     }
 
     // chargement de l'albedo
-    if (!mptr->textureAlbedo.isNull()){
+    if (!mptr->textureAlbedo.isNull())
+    {
         mptr->albedo = new QOpenGLTexture(mptr->textureAlbedo);
+
+        // Important : laisser Qt générer les mipmaps
+        mptr->albedo->setAutoMipMapGenerationEnabled(true);
+        mptr->albedo->generateMipMaps();
+
+        // Utiliser un filtre MIPMAP pour vérifier que la texture est complète
         mptr->albedo->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
         mptr->albedo->setMagnificationFilter(QOpenGLTexture::Linear);
 
-        //mptr->heightmap->setWrapMode(QOpenGLTexture::ClampToEdge);
-
-        mptr->albedo->generateMipMaps();
+        mptr->albedo->setWrapMode(QOpenGLTexture::ClampToEdge);
     }
+    else{
+        qDebug() << "nn y a pas";
+    }
+
 
     doneCurrent();
     update();

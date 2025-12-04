@@ -7,19 +7,37 @@ in float v_height;
 out vec4 fragColor;
 
 uniform vec3 light_position;
-uniform sampler2D albedo;
 uniform sampler2D current_hm;
 uniform sampler2D heightmapSand;
 uniform sampler2D heightmapWater;
 uniform sampler2D heightmapLava;
+layout(binding = 4) uniform sampler2D albedo;
 uniform int hm_index;
 
-void main() {
+// sampler2D get_heightmap(int index){
+//    switch(hm_index){
+//       case 0:
+//          return heightmapSand;
+//          break;
+//       case 1:
+//          return heightmapWater;
+//          break;
+//       case 2:
+//          return heightmapLava;
+//          break;
+//       default:
+//          return heightmapSand;
+//          break;
+//    }
+// }
 
-   vec3 L = normalize(light_position - v_world_pos);
+void main() {
+   vec3 light_pos = light_position;
+   light_pos.y -= 1.0;
+   vec3 L = normalize(light_pos - v_world_pos);
    float NL = max(dot(normalize(v_world_normal), L), 0.0);
    vec3 color = texture(albedo, v_uv).rgb;
-   float height_world = v_world_pos.y;
+   // float height_world = v_world_pos.y;
    // vec3 color = vec3(v_height);
 
    float alpha = 1.0;
@@ -31,5 +49,6 @@ void main() {
       color = 0.4*color + 0.6*deg_blue;
    }
    vec3 col = clamp(color * 0.2 + color * 0.8 * NL, 0.0, 1.0);
-   fragColor = vec4(col, 1.0);
+   fragColor = vec4(col, alpha);
+   // fragColor = vec4(col, 1.0) * 0.0 + vec4(v_uv.x, v_uv.y, 0.0, 1.0) * 1.0;
 }
