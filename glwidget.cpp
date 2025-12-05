@@ -200,7 +200,7 @@ void GLWidget::initializeGL()
     if (!m_program->addShaderFromSourceFile(QOpenGLShader::Fragment, ":/shaders/fshader.glsl"))
         close();
 
-    if (!m_compute->addShaderFromSourceFile(QOpenGLShader::Compute, ":/shaders/cshader.comp"))
+    if (!m_compute->addShaderFromSourceFile(QOpenGLShader::Compute, ":/shaders/cshader.glsl"))
         close();
 
     m_program->bindAttributeLocation("vertex", 0);
@@ -250,7 +250,7 @@ void GLWidget::initializeGL()
     m_view.setToIdentity();
     m_view.translate(0,0,m_zoom);
 
-    m_program->setUniformValue(m_light_pos_loc, QVector3D(0, 0, 0));
+    m_program->setUniformValue(m_light_pos_loc, QVector3D(0, 10, 0));
 
     m_program->release();
 
@@ -302,13 +302,32 @@ void GLWidget::paintGL()
 
             // mptr->isInputA = !mptr->isInputA;
 
-            QOpenGLTexture* readTex  = mptr->isInputA ? mptr->heightmapA : mptr->heightmapB;
+            QOpenGLTexture* readTexCurrent  = mptr->isInputA ? mptr->heightmapA : mptr->heightmapB;
             QOpenGLTexture* writeTex = mptr->isInputA ? mptr->heightmapB : mptr->heightmapA;
 
             m_compute->bind();
 
-            f->glBindImageTexture(0, readTex->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
+            f->glBindImageTexture(0, readTexCurrent->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
             f->glBindImageTexture(1, writeTex->textureId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R8);
+
+            QOpenGLTexture* readTexSand = scene_meshes[0]->isInputA ? scene_meshes[0]->heightmapA : scene_meshes[0]->heightmapB;
+            QOpenGLTexture* readTexWater = scene_meshes[1]->isInputA ? scene_meshes[1]->heightmapA : scene_meshes[1]->heightmapB;
+            QOpenGLTexture* readTexLava = scene_meshes[2]->isInputA ? scene_meshes[2]->heightmapA : scene_meshes[2]->heightmapB;
+
+            f->glBindImageTexture(2, readTexSand->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
+            f->glBindImageTexture(3, readTexWater->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
+            f->glBindImageTexture(4, readTexLava->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
+            m_compute->setUniformValue(m_compute->uniformLocation("hm_index"), mesh_index);
+
+            float moy_pix = 0.0;
+            for(int i = 0; i<mptr->heightmapImage.height(); i++){
+                for(int j = 0; j<mptr->heightmapImage.width(); j++){
+                    moy_pix += qRed(mptr->heightmapImage.pixel(i, j));
+                }
+            }
+            moy_pix /= mptr->heightmapImage.width() * mptr->heightmapImage.height();
+            moy_pix /= 255;
+            m_compute->setUniformValue(m_compute->uniformLocation("moy_pix"), moy_pix);
 
             int gx = (mptr->heightmapImage.width() + 15) / 16;
             int gy = (mptr->heightmapImage.height() + 15) / 16;
@@ -319,10 +338,10 @@ void GLWidget::paintGL()
             m_program->bind();
 
             // récup du result
-            // QImage result(mptr->heightmapImage.size(), QImage::Format_Grayscale8);
-            // f->glBindTexture(GL_TEXTURE_2D, writeTex->textureId());
-            // f->glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, result.bits());
-            // mptr->heightmapImage = result;
+            QImage result(mptr->heightmapImage.size(), QImage::Format_Grayscale8);
+            f->glBindTexture(GL_TEXTURE_2D, writeTex->textureId());
+            f->glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, result.bits());
+            mptr->heightmapImage = result;
 
             mptr->isInputA = !mptr->isInputA;
 
@@ -349,7 +368,7 @@ void GLWidget::paintGL()
             m_program->setUniformValue(m_program->uniformLocation("heightmapLava"), 3);
 
             m_program->setUniformValue(m_program->uniformLocation("hm_index"), mesh_index);
-            m_program->setUniformValue(m_program->uniformLocation("height_scale"), 5.0f);
+            m_program->setUniformValue(m_program->uniformLocation("height_scale"), 3.0f);
 
             glActiveTexture(GL_TEXTURE4);
             glBindTexture(GL_TEXTURE_2D, mptr->albedo->textureId());
@@ -572,8 +591,6 @@ void GLWidget::drawOnHeightmap(const QVector3D &point, bool invert)
 
     pushUndoState(activeMeshIndex);
 
-    qDebug() << "[DRAW] activeMeshIndex =" << activeMeshIndex;
-
     Mesh *mesh = scene_meshes[activeMeshIndex].get();
 
     if (!mesh) {
@@ -597,10 +614,6 @@ void GLWidget::drawOnHeightmap(const QVector3D &point, bool invert)
     x = qBound(0, x, img.width() - 1);
     y = qBound(0, y, img.height() - 1);
 
-    qDebug() << "[DRAW] point monde =" << point
-             << " -> pixel =" << x << y
-             << " image =" << img.width() << "x" << img.height();
-
 
     int delta = invert ? -m_brush_strength : m_brush_strength;
 
@@ -616,19 +629,11 @@ void GLWidget::drawOnHeightmap(const QVector3D &point, bool invert)
             int nx = x + i;
             int ny = y + j;
 
-            if (nx == x && ny == y) {
-                qDebug() << "[PIXEL] avant =" << qGray(img.pixel(nx, ny));
-            }
-
 
             if (nx >= 0 && nx < img.width() && ny >= 0 && ny < img.height()) {
                 int px = qGray(img.pixel(nx, ny));
                 px = qBound(0, px + delta, 255);
                 img.setPixel(nx, ny, qRgb(px, px, px));
-            }
-
-            if (nx == x && ny == y) {
-                qDebug() << "[PIXEL] après =" << qGray(img.pixel(nx, ny));
             }
 
         }
@@ -640,7 +645,7 @@ void GLWidget::drawOnHeightmap(const QVector3D &point, bool invert)
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, img.width(), img.height(),
                     GL_RED, GL_UNSIGNED_BYTE, img.constBits());
     GLenum err = glGetError();
-    if (err != GL_NO_ERROR) qDebug() << "❌ OpenGL Error après upload:" << err;
+    if (err != GL_NO_ERROR) qDebug() << "OpenGL Error après upload:" << err;
 
 
     emit HeightmapChanged(activeMeshIndex, mesh->heightmapImage);
@@ -767,11 +772,12 @@ void GLWidget::onHeightmapChanged(int hm_index, QImage hm){
         qDebug() << "Ajoutez d'abord un terrain";
         return;
     } else {
+
         QOpenGLTexture* texToUpdate = scene_meshes[hm_index]->isInputA ? scene_meshes[hm_index]->heightmapA : scene_meshes[hm_index]->heightmapB;
 
         scene_meshes[hm_index]->heightmapImage = hm;
         glBindTexture(GL_TEXTURE_2D,texToUpdate->textureId());
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, scene_meshes[hm_index]->heightmapImage.width(), scene_meshes[hm_index]->heightmapImage.height(), GL_RED, GL_UNSIGNED_BYTE, scene_meshes[hm_index]->heightmapImage.constBits());
+        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, hm.width(), hm.height(), GL_RED, GL_UNSIGNED_BYTE, scene_meshes[hm_index]->heightmapImage.constBits());
         emit HeightmapChanged(hm_index, scene_meshes[hm_index]->heightmapImage);
 
         update();
