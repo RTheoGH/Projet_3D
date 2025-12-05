@@ -75,11 +75,11 @@ GLWidget::GLWidget(QWidget *parent)
     m_core = QSurfaceFormat::defaultFormat().profile() == QSurfaceFormat::CoreProfile;
     // --transparent causes the clear color to be transparent. Therefore, on systems that
     // support it, the widget will become transparent apart from the logo.
-    if (m_transparent) {
-        QSurfaceFormat fmt = format();
-        fmt.setAlphaBufferSize(8);
-        setFormat(fmt);
-    }
+    // if (m_transparent) {
+    //     QSurfaceFormat fmt = format();
+    //     fmt.setAlphaBufferSize(8);
+    //     setFormat(fmt);
+    // }
 }
 
 GLWidget::~GLWidget()
@@ -570,6 +570,8 @@ void GLWidget::drawOnHeightmap(const QVector3D &point, bool invert)
 {
     if (scene_meshes.empty()) return;
 
+    pushUndoState(activeMeshIndex);
+
     qDebug() << "[DRAW] activeMeshIndex =" << activeMeshIndex;
 
     Mesh *mesh = scene_meshes[activeMeshIndex].get();
@@ -774,6 +776,74 @@ void GLWidget::onHeightmapChanged(int hm_index, QImage hm){
 
         update();
     }
+}
+
+void GLWidget::pushUndoState(int meshIndex)
+{
+    if (meshIndex < 0 || meshIndex >= scene_meshes.size())
+        return;
+
+    UndoEntry entry;
+    entry.meshIndex = meshIndex;
+    entry.previousImage = scene_meshes[meshIndex]->heightmapImage.copy();
+
+    undoStack.push_back(entry);
+
+    if (undoStack.size() > 50)
+        undoStack.erase(undoStack.begin());
+}
+
+void GLWidget::undoLastDraw()
+{
+    if (undoStack.empty())
+        return;
+
+    UndoEntry last = undoStack.back();
+    undoStack.pop_back();
+
+    int i = last.meshIndex;
+
+    scene_meshes[i]->heightmapImage = last.previousImage;
+
+    emit HeightmapChanged(i, last.previousImage);
+    onHeightmapChanged(i, last.previousImage);
+
+    update();
+}
+
+void GLWidget::clearAllMeshes()
+{
+    makeCurrent();
+
+    // Nettoyer tous les meshes existants
+    for (auto &mptr : scene_meshes) {
+        if (!mptr) continue;
+
+        if (mptr->has_heightmap) {
+            delete mptr->heightmapA;
+            delete mptr->heightmapB;
+            mptr->heightmapA = nullptr;
+            mptr->heightmapB = nullptr;
+        }
+
+        if (mptr->vao) mptr->vao->destroy();
+        if (mptr->vbo_pos) mptr->vbo_pos->destroy();
+        if (mptr->vbo_norm) mptr->vbo_norm->destroy();
+        if (mptr->ebo) mptr->ebo->destroy();
+        if (mptr->uv_buffer) mptr->uv_buffer->destroy();
+
+        if (mptr->albedo) {
+            delete mptr->albedo;
+            mptr->albedo = nullptr;
+        }
+    }
+
+    scene_meshes.clear();
+    undoStack.clear();
+    activeMeshIndex = 0;
+
+    doneCurrent();
+    update();
 }
 
 void GLWidget::drawBrushPreview()

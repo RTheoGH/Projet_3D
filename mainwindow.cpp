@@ -109,23 +109,23 @@ MainWindow::MainWindow()
     QActionGroup *drawGroup = new QActionGroup(this);
     drawGroup->setExclusive(true);
 
-    QAction *sand = new QAction(QIcon(":/icons/sand.png"), tr("Sand"), this);
-    QAction *water = new QAction(QIcon(":/icons/water.png"), tr("Water"), this);
-    QAction *lava  = new QAction(QIcon(":/icons/lava.png"), tr("Lava"), this);
+    sandAction = new QAction(QIcon(":/icons/sand.png"), tr("Sand"), this);
+    waterAction = new QAction(QIcon(":/icons/water.png"), tr("Water"), this);
+    lavaAction  = new QAction(QIcon(":/icons/lava.png"), tr("Lava"), this);
 
-    sand->setCheckable(true);
-    water->setCheckable(true);
-    lava->setCheckable(true);
+    sandAction->setCheckable(true);
+    waterAction->setCheckable(true);
+    lavaAction->setCheckable(true);
 
-    drawGroup->addAction(sand);
-    drawGroup->addAction(water);
-    drawGroup->addAction(lava);
+    drawGroup->addAction(sandAction);
+    drawGroup->addAction(waterAction);
+    drawGroup->addAction(lavaAction);
 
-    sand->setChecked(true);
+    sandAction->setChecked(true);
 
-    toolbar2->addAction(sand);
-    toolbar2->addAction(water);
-    toolbar2->addAction(lava);
+    toolbar2->addAction(sandAction);
+    toolbar2->addAction(waterAction);
+    toolbar2->addAction(lavaAction);
 
     addToolBar(Qt::LeftToolBarArea, toolbar2);
 
@@ -171,6 +171,12 @@ MainWindow::MainWindow()
     sliderWidget->setLayout(sliderLayout);
     toolbar2->addWidget(sliderWidget);
 
+    toolbar2->addSeparator();
+
+    QAction *undo = new QAction(QIcon(":/icons/undo.png"), tr("Undo"), this);
+    undo->setShortcut(QKeySequence::Undo);
+    toolbar2->addAction(undo);
+
 //    QMenu *draw = menuBar->addMenu("");
 
 //    QAction *sand = new QAction(QIcon(":/icons/sand.png"), tr("sand"),this);
@@ -192,14 +198,18 @@ MainWindow::MainWindow()
         connect(radiusSlider, &QSlider::valueChanged, w, &Window::setBrushRadius);
         connect(strengthSlider, &QSlider::valueChanged, w, &Window::setBrushStrength);
 
-        connect(sand, &QAction::triggered, this, [gl]() { gl->setActiveMesh(0); });
-        connect(water, &QAction::triggered, this, [gl]() { gl->setActiveMesh(1); });
-        connect(lava, &QAction::triggered, this, [gl]() { gl->setActiveMesh(2); });
+        connect(sandAction, &QAction::triggered, this, [gl]() { gl->setActiveMesh(0); });
+        connect(waterAction, &QAction::triggered, this, [gl]() { gl->setActiveMesh(1); });
+        connect(lavaAction, &QAction::triggered, this, [gl]() { gl->setActiveMesh(2); });
 
         connect(square, &QAction::triggered, gl, &GLWidget::setBrushShapeSquare);
         connect(circle, &QAction::triggered, gl, &GLWidget::setBrushShapeCircle);
         connect(square, &QAction::triggered, w, &Window::setBrushShapeSquare);
         connect(circle, &QAction::triggered, w, &Window::setBrushShapeCircle);
+
+        connect(undo, &QAction::triggered, this, [gl]() {
+            gl->undoLastDraw();
+        });
     }
 }
 
@@ -318,6 +328,11 @@ void MainWindow::openMeshDialog()
         Window *w = qobject_cast<Window*>(centralWidget());
         if (!w)
             return;
+
+        GLWidget *gl = w->get_glWidget();
+        gl->clearAllMeshes();
+        gl->setActiveMesh(0);
+        sandAction->setChecked(true);
 
         auto p = std::make_unique<Plane>(10, 10, size, size, ":/textures/sand_texture.png");
         auto p2 = std::make_unique<Plane>(10, 10, size, size, ":/textures/water_texture.png");

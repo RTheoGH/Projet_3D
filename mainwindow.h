@@ -64,6 +64,11 @@ signals:
     void InitHeightmaps(int material_index, QImage hm);
     void SceneLoaded(QImage hm_sand, QImage hm_water, QImage hm_lava);
 
+private:
+    QAction *sandAction;
+    QAction *waterAction;
+    QAction *lavaAction;
+
 private slots:
     void onAddNew();
     void loadMesh();

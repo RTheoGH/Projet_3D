@@ -80,6 +80,10 @@ public:
     QSize minimumSizeHint() const override;
     QSize sizeHint() const override;
     const std::vector<std::unique_ptr<Mesh>>& get_scene_meshes() const;
+    void clearSceneMeshes(){
+        scene_meshes.clear();
+    }
+    void clearAllMeshes();
 
 public slots:
     //Completer : ajouter des slots pour signaler appliquer le changement de rotation
@@ -96,6 +100,9 @@ public slots:
     void setBrushShapeSquare() { m_brushShape = "Square"; }
     void setBrushShapeCircle() { m_brushShape = "Circle"; }
     void timerEvent(QTimerEvent*) override;
+
+    void pushUndoState(int meshIndex);
+    void undoLastDraw();
 
 signals:
 
@@ -147,6 +154,11 @@ private:
     GLint textureUniform = -1;
 
     std::vector<std::unique_ptr<Mesh>> scene_meshes;
+    struct UndoEntry {
+        int meshIndex;
+        QImage previousImage;
+    };
+    std::vector<UndoEntry> undoStack;
 
     float m_tx = 0.0f;
     float m_ty = 0.0f;
