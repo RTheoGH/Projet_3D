@@ -9,6 +9,7 @@ layout(binding = 3, r8) readonly uniform image2D water_hm;
 layout(binding = 4, r8) readonly uniform image2D lava_hm;
 uniform int hm_index;
 uniform float moy_pix;
+uniform int erosionEnabled;
 
 void main() {
 
@@ -50,7 +51,7 @@ void main() {
 
         new_val = min(c, avg);
 
-        if(water_c > c){
+        if(water_c > c && erosionEnabled == 1){
 //            new_val += 0.01 * moy_pix;
             new_val -= 0.001;
         }

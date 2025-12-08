@@ -179,7 +179,7 @@ MainWindow::MainWindow()
     toolbar2->addAction(undo);
 
     QCheckBox *erosion = new QCheckBox("Erosion");
-    erosion->setChecked(false);
+    erosion->setChecked(true);
     toolbar2->addWidget(erosion);
 
 //    QMenu *draw = menuBar->addMenu("");
@@ -215,6 +215,8 @@ MainWindow::MainWindow()
         connect(undo, &QAction::triggered, this, [gl]() {
             gl->undoLastDraw();
         });
+
+        connect(erosion, &QCheckBox::toggled, gl, &GLWidget::setErosionEnabled);
     }
 }
 

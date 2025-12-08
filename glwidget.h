@@ -104,6 +104,8 @@ public slots:
     void pushUndoState(int meshIndex);
     void undoLastDraw();
 
+    void setErosionEnabled(bool enabled);
+
 signals:
 
     //Completer : ajouter des signaux pour signaler des changement de rotation
@@ -175,6 +177,10 @@ private:
     QString m_brushShape = "Square";
     QVector3D m_brushPreviewPos;
     bool m_showBrushPreview = false;
+
+    bool m_erosionEnabled = true;
+
+    QOpenGLTexture* m_grassTexture = nullptr;
 };
 
 #endif

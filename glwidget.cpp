@@ -254,6 +254,19 @@ void GLWidget::initializeGL()
 
     m_program->release();
 
+    QImage grassImg(":/textures/grass_texture.png");
+    if (!grassImg.isNull()) {
+        m_grassTexture = new QOpenGLTexture(grassImg);
+        m_grassTexture->setAutoMipMapGenerationEnabled(true);
+        m_grassTexture->generateMipMaps();
+        m_grassTexture->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
+        m_grassTexture->setMagnificationFilter(QOpenGLTexture::Linear);
+        m_grassTexture->setWrapMode(QOpenGLTexture::ClampToEdge);
+        qDebug() << "Texture d'herbe chargée !";
+    } else {
+        qDebug() << "Impossible de charger grass_texture.png";
+    }
+
     startTimer(16);
 }
 
@@ -294,13 +307,15 @@ void GLWidget::paintGL()
 
     QOpenGLTexture* texForRender;
 
-    int mesh_index = 0;
-    for (auto &mptr : scene_meshes) {
+    std::vector<int> renderOrder = {0, 2, 1};
+
+    for (int mesh_index : renderOrder)
+    {
+        if (mesh_index >= scene_meshes.size()) continue;
+        auto &mptr = scene_meshes[mesh_index];
         if (!mptr || !mptr->gpu_uploaded) continue;
 
         if (mptr->has_heightmap && f && runCompute && m_compute) {
-
-            // mptr->isInputA = !mptr->isInputA;
 
             QOpenGLTexture* readTexCurrent  = mptr->isInputA ? mptr->heightmapA : mptr->heightmapB;
             QOpenGLTexture* writeTex = mptr->isInputA ? mptr->heightmapB : mptr->heightmapA;
@@ -310,13 +325,14 @@ void GLWidget::paintGL()
             f->glBindImageTexture(0, readTexCurrent->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
             f->glBindImageTexture(1, writeTex->textureId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_R8);
 
-            QOpenGLTexture* readTexSand = scene_meshes[0]->isInputA ? scene_meshes[0]->heightmapA : scene_meshes[0]->heightmapB;
+            QOpenGLTexture* readTexSand  = scene_meshes[0]->isInputA ? scene_meshes[0]->heightmapA : scene_meshes[0]->heightmapB;
             QOpenGLTexture* readTexWater = scene_meshes[1]->isInputA ? scene_meshes[1]->heightmapA : scene_meshes[1]->heightmapB;
-            QOpenGLTexture* readTexLava = scene_meshes[2]->isInputA ? scene_meshes[2]->heightmapA : scene_meshes[2]->heightmapB;
+            QOpenGLTexture* readTexLava  = scene_meshes[2]->isInputA ? scene_meshes[2]->heightmapA : scene_meshes[2]->heightmapB;
 
-            f->glBindImageTexture(2, readTexSand->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
+            f->glBindImageTexture(2, readTexSand->textureId(),  0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
             f->glBindImageTexture(3, readTexWater->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
-            f->glBindImageTexture(4, readTexLava->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
+            f->glBindImageTexture(4, readTexLava->textureId(),  0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
+
             m_compute->setUniformValue(m_compute->uniformLocation("hm_index"), mesh_index);
 
             float moy_pix = 0.0;
@@ -329,8 +345,11 @@ void GLWidget::paintGL()
             moy_pix /= 255;
             m_compute->setUniformValue(m_compute->uniformLocation("moy_pix"), moy_pix);
 
+            m_compute->setUniformValue(m_compute->uniformLocation("erosionEnabled"), m_erosionEnabled ? 1 : 0);
+
             int gx = (mptr->heightmapImage.width() + 15) / 16;
             int gy = (mptr->heightmapImage.height() + 15) / 16;
+
             f->glDispatchCompute(gx, gy, 1);
             f->glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT | GL_TEXTURE_FETCH_BARRIER_BIT);
             m_compute->release();
@@ -349,48 +368,42 @@ void GLWidget::paintGL()
 
             glActiveTexture(GL_TEXTURE0);
             glBindTexture(GL_TEXTURE_2D, texForRender->textureId());
-
-            int loc = m_program->uniformLocation("current_hm");
-            m_program->setUniformValue(loc, 0);
-
-
+            m_program->setUniformValue("current_hm", 0);
 
             glActiveTexture(GL_TEXTURE1);
-            glBindTexture(GL_TEXTURE_2D, (scene_meshes[0]->isInputA ? scene_meshes[0]->heightmapA : scene_meshes[0]->heightmapB)->textureId());
-            m_program->setUniformValue(m_program->uniformLocation("heightmapSand"), 1);
+            glBindTexture(GL_TEXTURE_2D, readTexSand->textureId());
+            m_program->setUniformValue("heightmapSand", 1);
 
             glActiveTexture(GL_TEXTURE2);
-            glBindTexture(GL_TEXTURE_2D, (scene_meshes[1]->isInputA ? scene_meshes[1]->heightmapA : scene_meshes[1]->heightmapB)->textureId());
-            m_program->setUniformValue(m_program->uniformLocation("heightmapWater"), 2);
+            glBindTexture(GL_TEXTURE_2D, readTexWater->textureId());
+            m_program->setUniformValue("heightmapWater", 2);
 
             glActiveTexture(GL_TEXTURE3);
-            glBindTexture(GL_TEXTURE_2D, (scene_meshes[2]->isInputA ? scene_meshes[2]->heightmapA : scene_meshes[2]->heightmapB)->textureId());
-            m_program->setUniformValue(m_program->uniformLocation("heightmapLava"), 3);
+            glBindTexture(GL_TEXTURE_2D, readTexLava->textureId());
+            m_program->setUniformValue("heightmapLava", 3);
 
-            m_program->setUniformValue(m_program->uniformLocation("hm_index"), mesh_index);
-            m_program->setUniformValue(m_program->uniformLocation("height_scale"), 3.0f);
+            m_program->setUniformValue("hm_index", mesh_index);
+            m_program->setUniformValue("height_scale", 3.0f);
 
             glActiveTexture(GL_TEXTURE4);
             glBindTexture(GL_TEXTURE_2D, mptr->albedo->textureId());
-            int loc_albedo = m_program->uniformLocation("albedo");
-            m_program->setUniformValue(loc_albedo, 4);
+            m_program->setUniformValue("albedo", 4);
 
-
+            if (mesh_index == 2 && m_grassTexture) {
+                glActiveTexture(GL_TEXTURE5);
+                glBindTexture(GL_TEXTURE_2D, m_grassTexture->textureId());
+                m_program->setUniformValue("grassTexture", 5);
+            }
         }
 
+        // draw mesh
         QOpenGLVertexArrayObject::Binder vaoBinder(mptr->vao.get());
-
         glDrawElements(GL_TRIANGLES, (GLsizei)mptr->triangles.size(), GL_UNSIGNED_INT, nullptr);
-
-        // mptr->isInputA = !mptr->isInputA;
-
-        // qDebug() << "draw mesh idx" << mesh_index << "gpu_uploaded" << mptr->gpu_uploaded;
-
-        mesh_index++;
     }
 
     m_program->release();
 }
+
 
 
 void GLWidget::resizeGL(int w, int h)
@@ -849,6 +862,12 @@ void GLWidget::clearAllMeshes()
     activeMeshIndex = 0;
 
     doneCurrent();
+    update();
+}
+
+void GLWidget::setErosionEnabled(bool enabled)
+{
+    m_erosionEnabled = enabled;
     update();
 }
 
