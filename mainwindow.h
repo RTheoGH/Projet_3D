@@ -67,7 +67,7 @@ signals:
 private:
     QAction *sandAction;
     QAction *waterAction;
-    QAction *lavaAction;
+    QAction *dirtAction;
 
 private slots:
     void onAddNew();

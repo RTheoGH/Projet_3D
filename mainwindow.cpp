@@ -57,6 +57,7 @@
 #include <QMessageBox>
 #include <QVBoxLayout>
 #include <QFileDialog>
+#include <QCheckBox>
 #include "glwidget.h"
 #include "maillage.h"
 #include "meshdialog.h"
@@ -111,21 +112,21 @@ MainWindow::MainWindow()
 
     sandAction = new QAction(QIcon(":/icons/sand.png"), tr("Sand"), this);
     waterAction = new QAction(QIcon(":/icons/water.png"), tr("Water"), this);
-    lavaAction  = new QAction(QIcon(":/icons/lava.png"), tr("Lava"), this);
+    dirtAction  = new QAction(QIcon(":/icons/dirt.png"), tr("Dirt"), this);
 
     sandAction->setCheckable(true);
     waterAction->setCheckable(true);
-    lavaAction->setCheckable(true);
+    dirtAction->setCheckable(true);
 
     drawGroup->addAction(sandAction);
     drawGroup->addAction(waterAction);
-    drawGroup->addAction(lavaAction);
+    drawGroup->addAction(dirtAction);
 
     sandAction->setChecked(true);
 
     toolbar2->addAction(sandAction);
     toolbar2->addAction(waterAction);
-    toolbar2->addAction(lavaAction);
+    toolbar2->addAction(dirtAction);
 
     addToolBar(Qt::LeftToolBarArea, toolbar2);
 
@@ -177,6 +178,10 @@ MainWindow::MainWindow()
     undo->setShortcut(QKeySequence::Undo);
     toolbar2->addAction(undo);
 
+    QCheckBox *erosion = new QCheckBox("Erosion");
+    erosion->setChecked(false);
+    toolbar2->addWidget(erosion);
+
 //    QMenu *draw = menuBar->addMenu("");
 
 //    QAction *sand = new QAction(QIcon(":/icons/sand.png"), tr("sand"),this);
@@ -200,7 +205,7 @@ MainWindow::MainWindow()
 
         connect(sandAction, &QAction::triggered, this, [gl]() { gl->setActiveMesh(0); });
         connect(waterAction, &QAction::triggered, this, [gl]() { gl->setActiveMesh(1); });
-        connect(lavaAction, &QAction::triggered, this, [gl]() { gl->setActiveMesh(2); });
+        connect(dirtAction, &QAction::triggered, this, [gl]() { gl->setActiveMesh(2); });
 
         connect(square, &QAction::triggered, gl, &GLWidget::setBrushShapeSquare);
         connect(circle, &QAction::triggered, gl, &GLWidget::setBrushShapeCircle);
@@ -336,7 +341,7 @@ void MainWindow::openMeshDialog()
 
         auto p = std::make_unique<Plane>(10, 10, size, size, ":/textures/sand_texture.png");
         auto p2 = std::make_unique<Plane>(10, 10, size, size, ":/textures/water_texture.png");
-        auto p3 = std::make_unique<Plane>(10, 10, size, size, ":/textures/lava_texture.png");
+        auto p3 = std::make_unique<Plane>(10, 10, size, size, ":/textures/dirt_texture.png");
 
         if(perlin){
             QImage perlin_image = loadPerlinNoiseImage();
@@ -375,7 +380,7 @@ QImage MainWindow::loadPerlinNoiseImage()
     const SimplexNoise simplex(0.1f/scale, 0.5f, lacunarity, persistance); // Amplitude of 0.5 for the 1st octave : sum ~1.0f
     const int octaves = 5; // Estimate number of octaves needed for the current scale
 
-    QImage res_image(1024, 1024, QImage::Format_RGB32);
+    QImage res_image(512, 512, QImage::Format_RGB32);
 
     for(int i=0 ; i<res_image.height(); i++){
         const float y = static_cast<float>(i - res_image.height()/2 + offset_y); // (*scale)
