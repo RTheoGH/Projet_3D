@@ -185,6 +185,8 @@ void Window::mouseDrawOnLabel(QMouseEvent *event, QLabel* label, QImage &img, in
 
 bool Window::eventFilter(QObject *obj, QEvent *event)
 {
+    if(obj == nullptr) return false;
+
     if (event->type() == QEvent::MouseButtonPress ||
         event->type() == QEvent::MouseMove) {
 

@@ -231,12 +231,25 @@ void GLWidget::initializeGL()
         f->initializeOpenGLFunctions();
     }
 
-    // glActiveTexture(GL_TEXTURE4);
-    // int locAlbedo = m_program->uniformLocation("albedo");
-    // if (locAlbedo >= 0) m_program->setUniformValue(locAlbedo, 4); // ex unité 4
+    water_velo_data = std::vector<float>(512 * 512 * 4, 0.0f);
 
-    // int locCurrentHm = m_program->uniformLocation("current_hm");
-    // if (locCurrentHm >= 0) m_program->setUniformValue(locCurrentHm, 0); // unité 0
+    water_velocityA = new QOpenGLTexture(QOpenGLTexture::Target2D);
+    water_velocityA->setSize(512, 512);
+    water_velocityA->setFormat(QOpenGLTexture::RGBA32F);
+    water_velocityA->setMinificationFilter(QOpenGLTexture::Nearest);
+    water_velocityA->setMagnificationFilter(QOpenGLTexture::Nearest);
+    water_velocityA->setWrapMode(QOpenGLTexture::ClampToEdge);
+    water_velocityA->allocateStorage();
+    water_velocityA->setData(QOpenGLTexture::RGBA, QOpenGLTexture::Float32, water_velo_data.data());
+
+    water_velocityB = new QOpenGLTexture(QOpenGLTexture::Target2D);
+    water_velocityB->setSize(512, 512);
+    water_velocityB->setFormat(QOpenGLTexture::RGBA32F);
+    water_velocityB->setMinificationFilter(QOpenGLTexture::Nearest);
+    water_velocityB->setMagnificationFilter(QOpenGLTexture::Nearest);
+    water_velocityB->setWrapMode(QOpenGLTexture::ClampToEdge);
+    water_velocityB->allocateStorage();
+    water_velocityB->setData(QOpenGLTexture::RGBA, QOpenGLTexture::Float32, water_velo_data.data());
 
     m_mvp_matrix_loc = m_program->uniformLocation("mvp_matrix");
     m_model_matrix_loc = m_program->uniformLocation("model_matrix");
@@ -340,6 +353,9 @@ void GLWidget::paintGL()
             f->glBindImageTexture(3, readTexWater->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
             f->glBindImageTexture(4, readTexLava->textureId(),  0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
 
+            f->glBindImageTexture(5, water_velocityA->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY,  GL_RGBA32F);
+            f->glBindImageTexture(6, water_velocityB->textureId(), 0, GL_FALSE, 0, GL_WRITE_ONLY, GL_RGBA32F);
+
             m_compute->setUniformValue(m_compute->uniformLocation("hm_index"), mesh_index);
 
             float moy_pix = 0.0;
@@ -369,7 +385,19 @@ void GLWidget::paintGL()
             f->glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, result.bits());
             mptr->heightmapImage = result;
 
+            water_velo_data.assign(512*512*4, 0.0f);
+            f->glBindTexture(GL_TEXTURE_2D, water_velocityB->textureId());
+            f->glGetTexImage(GL_TEXTURE_2D, 0, GL_RGBA, GL_FLOAT, water_velo_data.data());
+
+            // for(unsigned int i = 0; i<water_velo_data.size(); i++){
+            //     if(water_velo_data[i]>0)
+            //         qDebug() << "val : "<<water_velo_data[i];
+            // }
+
             mptr->isInputA = !mptr->isInputA;
+            std::swap(water_velocityA, water_velocityB);
+            // qDebug() << "A : " << water_velocityA;
+            // qDebug() << "B : " << water_velocityB;
 
             texForRender = mptr->isInputA ? mptr->heightmapA : mptr->heightmapB;
 

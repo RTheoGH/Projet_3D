@@ -156,6 +156,10 @@ private:
     GLint textureUniform = -1;
 
     std::vector<std::unique_ptr<Mesh>> scene_meshes;
+    QOpenGLTexture* water_velocityA = nullptr;
+    QOpenGLTexture* water_velocityB = nullptr;
+    std::vector<float> water_velo_data;
+    
     struct UndoEntry {
         int meshIndex;
         QImage previousImage;
