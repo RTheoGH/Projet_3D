@@ -68,22 +68,9 @@ MainWindow::MainWindow()
 {
     resize(1400, 1000);
     setMinimumSize(1400, 1000);
-    //showMaximized();
-    //QMenuBar *menuBar = new QMenuBar;
-    //setMenuBar(menuBar);
-    //QMenu *menuWindow = menuBar->addMenu(tr("&Window"));
-    //QMenu *menuWindow = menuBar->addMenu(QIcon(":/icons/open.png"),"");
-
-
-    //QMenu *fileMenu = menuBar->addMenu(tr("&Fichier"));
-    //QAction *loadMeshAction = new QAction(tr("Charger un maillage"), this);
-    //fileMenu->addAction(loadMeshAction);
-    //connect(loadMeshAction, &QAction::triggered, this, &MainWindow::loadMesh);
 
     QToolBar *toolbar1 = addToolBar("Mesh");
     toolbar1->setIconSize(QSize(24,24));
-
-    //QMenu *main = menuBar->addMenu("");
 
     QAction *newMeshAction = new QAction(QIcon(":/icons/open.png"), tr("Nouveau terrain"), this);
     connect(newMeshAction, &QAction::triggered, this, &MainWindow::openMeshDialog);
@@ -182,17 +169,6 @@ MainWindow::MainWindow()
     erosion->setChecked(true);
     toolbar2->addWidget(erosion);
 
-//    QMenu *draw = menuBar->addMenu("");
-
-//    QAction *sand = new QAction(QIcon(":/icons/sand.png"), tr("sand"),this);
-//    QAction *water = new QAction(QIcon(":/icons/water.png"), tr("water"),this);
-//    QAction *lava = new QAction(QIcon(":/icons/lava.png"), tr("lava"),this);
-
-//    draw->addAction(sand);
-//    draw->addAction(water);
-//    draw->addAction(lava);
-
-
     onAddNew();
 
     Window* w = qobject_cast<Window*>(centralWidget());
@@ -230,24 +206,10 @@ void MainWindow::onAddNew()
 
 void MainWindow::loadMesh()
 {
-    // QString fileName = QFileDialog::getOpenFileName(
-    //     this,
-    //     tr("Ouvrir un maillage"),
-    //     "",
-    //     tr("OFF Files (*.off);;All Files (*)")
-    // );
-    // if (fileName.isEmpty())
-    //     return;
-
     Window *w = qobject_cast<Window*>(centralWidget());
     if (!w)
         return;
 
-    // Mesh m;
-    // if (!m.loadOFF(fileName)) {
-    //     QMessageBox::warning(this, tr("Erreur"), tr("Impossible de charger le maillage."));
-    //     return;
-    // }
     std::cout<<"allo1"<<std::endl;
     auto p = std::make_unique<Plane>(10, 10, 32, 32);
     w->get_glWidget()->addMesh(std::move(p), false);
@@ -262,12 +224,7 @@ void MainWindow::loadMesh()
 
 void MainWindow::loadFile()
 {
-    // ouvrir un fichier (3 heightmaps (png)) (si pas de plan affiché en créer un selon la taille des heightmaps? sinon remplacer les heightmaps du plan actuel)
-    // QString fileName = QFileDialog::getOpenFileName(this,tr("Ouvrir un maillage"),"",tr("OFF Files (*.off);;All Files (*)"));
-    // if (fileName.isEmpty())
-
-
-
+    // old
     return;
 
     QString dir = QFileDialog::getExistingDirectory(this, "Charger un terrain");
@@ -297,7 +254,7 @@ void MainWindow::loadFile()
 
 void MainWindow::saveFile()
 {
-    // sauvegarder les 3 heightmaps (png) dans un fichier ?;
+    // old
     return;
 
     QString dir = QFileDialog::getExistingDirectory(this, "Sauvegarder le terrain");
@@ -367,8 +324,6 @@ void MainWindow::openMeshDialog()
         w->get_glWidget()->addMesh(std::move(p), perlin);
         w->get_glWidget()->addMesh(std::move(p2), perlin);
         w->get_glWidget()->addMesh(std::move(p3), perlin);
-
-
     }
 }
 
@@ -381,17 +336,16 @@ QImage MainWindow::loadPerlinNoiseImage(int octaves, double frequency)
     float lacunarity    = 1.99f;
     float persistance   = 0.5f;
 
-    const SimplexNoise simplex(0.1f/scale, 0.5f, lacunarity, persistance); // Amplitude of 0.5 for the 1st octave : sum ~1.0f
-    //const int octaves = 5; // Estimate number of octaves needed for the current scale
+    const SimplexNoise simplex(0.1f/scale, 0.5f, lacunarity, persistance);
 
     QImage res_image(512, 512, QImage::Format_RGB32);
 
     for(int i=0 ; i<res_image.height(); i++){
-        const float y = static_cast<float>(i - res_image.height()/2 + offset_y); // (*scale)
+        const float y = static_cast<float>(i - res_image.height()/2 + offset_y);
         for(int j=0 ; j<res_image.width(); j++){
 
             const float x = static_cast<float>(j - res_image.width()/2 + offset_x);
-            const int noise = (simplex.fractal(octaves, x, y) + 1.0)/2.0 * 255.0/* + offset_z*/; // range [-1, 1] -> [0, 255]
+            const int noise = (simplex.fractal(octaves, x, y) + 1.0)/2.0 * 255.0;
 
             const QRgb pixel_value = qRgb(noise, noise, noise);
             res_image.setPixel(i, j, pixel_value);
@@ -549,8 +503,6 @@ void MainWindow::loadTerrainBinary()
         return;
     }
 
-
-
     // qDebug() << meshes[0]->heightmapImage.size();
     // qDebug() << meshes[1]->heightmapImage.size();
     // qDebug() << meshes[2]->heightmapImage.size();
@@ -561,9 +513,39 @@ void MainWindow::loadTerrainBinary()
     QMessageBox::information(this, "OK", "Terrain chargé !");
 }
 
-
-
 void MainWindow::infos()
 {
-    return;
+    QMessageBox aboutBox(this);
+    aboutBox.setWindowTitle("À propos - Éditeur de Terrain");
+    aboutBox.setIconPixmap(QPixmap(":/icons/help.png").scaled(64, 64, Qt::KeepAspectRatio, Qt::SmoothTransformation));
+
+    QString infoText =
+        "<h2>Éditeur de Terrain 3D</h2>"
+        "<p><b>Version:</b> 1.0</p>"
+        "<p><b>Date:</b> Décembre 2025</p>"
+        "<hr>"
+        "<h3>Fonctionnalités:</h3>"
+        "<ul>"
+        "<li>Création de terrains (sans/avec bruit de Perlin)</li>"
+        "<li>3 types de matériaux (Sable, Eau, Terre)</li>"
+        "<li>Pinceau circulaire ou carré</li>"
+        "<li>Système d'érosion</li>"
+        "<li>Sauvegarde/Chargement de terrains</li>"
+        "</ul>"
+        "<hr>"
+        "<h3>Contrôles:</h3>"
+        "<ul>"
+        "<li><b>Clic gauche:</b> Dessiner sur le terrain</li>"
+        "<li><b>Clic droit:</b> Effacer sur le terrain</li>"
+        "<li><b>Clic gauche + glisser:</b> Rotation de la caméra</li>"
+        "<li><b>Clic droit + glisser:</b> Déplacement de la caméra</li>"
+        "<li><b>Molette:</b> Zoom avant/arrière</li>"
+        "<li><b>Ctrl+Z:</b> Annuler la dernière action</li>"
+        "</ul>"
+        "<hr>"
+        "<p><i>Développé avec Qt et OpenGL</i></p>";
+
+    aboutBox.setText(infoText);
+    aboutBox.setStandardButtons(QMessageBox::Ok);
+    aboutBox.exec();
 }
