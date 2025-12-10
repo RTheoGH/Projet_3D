@@ -331,6 +331,8 @@ void MainWindow::openMeshDialog()
     if (dlg.exec() == QDialog::Accepted) {
         int size = dlg.meshSize();
         bool perlin = dlg.usePerlinNoise();
+        int octaves = dlg.octaves();
+        double frequency = dlg.frequency();
 
         Window *w = qobject_cast<Window*>(centralWidget());
         if (!w)
@@ -346,7 +348,7 @@ void MainWindow::openMeshDialog()
         auto p3 = std::make_unique<Plane>(10, 10, size, size, ":/textures/dirt_texture.png");
 
         if(perlin){
-            QImage perlin_image = loadPerlinNoiseImage();
+            QImage perlin_image = loadPerlinNoiseImage(octaves, frequency);
             p->heightmapImage = perlin_image;
             p2->heightmapImage = perlin_image;
             p3->heightmapImage = perlin_image;
@@ -370,9 +372,9 @@ void MainWindow::openMeshDialog()
     }
 }
 
-QImage MainWindow::loadPerlinNoiseImage()
+QImage MainWindow::loadPerlinNoiseImage(int octaves, double frequency)
 {
-    float scale     = 200.f;
+    float scale     = 1.0f / frequency;
     float offset_x  = 0.0f; // 5.9f;
     float offset_y  = 0.0f; // 5.1f;
     float offset_z  = 0.0f; // 0.05f;
@@ -380,7 +382,7 @@ QImage MainWindow::loadPerlinNoiseImage()
     float persistance   = 0.5f;
 
     const SimplexNoise simplex(0.1f/scale, 0.5f, lacunarity, persistance); // Amplitude of 0.5 for the 1st octave : sum ~1.0f
-    const int octaves = 5; // Estimate number of octaves needed for the current scale
+    //const int octaves = 5; // Estimate number of octaves needed for the current scale
 
     QImage res_image(512, 512, QImage::Format_RGB32);
 

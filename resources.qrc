@@ -15,5 +15,6 @@
         <file>icons/square.png</file>
         <file>icons/undo.png</file>
         <file>icons/dirt.png</file>
+        <file>icons/sand.ico</file>
     </qresource>
 </RCC>

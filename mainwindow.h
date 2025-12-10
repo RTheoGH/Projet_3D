@@ -76,7 +76,7 @@ private slots:
     void saveFile();
     void infos();
     void openMeshDialog();
-    QImage loadPerlinNoiseImage();
+    QImage loadPerlinNoiseImage(int octaves = 5, double frequency = 0.005);
     void saveTerrainBinary();
     void loadTerrainBinary();
 };
