@@ -66,6 +66,8 @@ class Window : public QWidget
 {
     Q_OBJECT
 
+
+
 public:
     Window(MainWindow *mw);
     GLWidget* get_glWidget() const { return glWidget; }
@@ -106,9 +108,9 @@ private:
     QLabel *water_h;
     QLabel *lava_h;
 
-    int m_brush_radius;
-    int m_brush_strength;
-    QString m_brushShape;
+    int m_brush_radius = 20;
+    int m_brush_strength = 20;
+    QString m_brushShape = "Square";
 };
 
 #endif

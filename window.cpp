@@ -70,7 +70,6 @@ Window::Window(MainWindow *mw)
     ySlider = createSlider();
     zSlider = createSlider();
 
-
     //A completer, connecter les sliders de cette classe avec le glWidget pour mettre à jour la rotation
     // et inversement
     connect(xSlider, &QSlider::valueChanged, glWidget, &GLWidget::setXRotation);
@@ -152,9 +151,9 @@ void Window::keyPressEvent(QKeyEvent *e)
     else
         QWidget::keyPressEvent(e);
 }
-
 void Window::mouseDrawOnLabel(QMouseEvent *event, QLabel* label, QImage &img, int label_index)
 {
+
     int x = event->x() * img.width() / label->width();
     int y = event->y() * img.height() / label->height();
 
@@ -172,15 +171,15 @@ void Window::mouseDrawOnLabel(QMouseEvent *event, QLabel* label, QImage &img, in
             if (nx >= 0 && nx < img.width() && ny >= 0 && ny < img.height()) {
                 int value = qRed(img.pixel(nx, ny));
                 value += 2;
-                //value = std::clamp(value, 0, 255);
                 value = qBound(0, value, 255);
                 img.setPixel(nx, ny, qRgb(value, value, value));
             }
         }
     }
 
-    // emit onPixmapChanged(label_index, img);
-    label->setPixmap(QPixmap::fromImage(img));
+    emit onPixmapChanged(label_index, img);
+    label->setPixmap(QPixmap::fromImage(img.scaled(250, 250, Qt::KeepAspectRatio)));
+
     qDebug() << "fin du draw on label";
 }
 
@@ -233,21 +232,36 @@ void Window::dockUndock()
     }
 }
 
-void Window::updateHeightmapLabel(int material_index, QImage hm){
+void Window::updateHeightmapLabel(int material_index, QImage hm)
+{
+    if (hm.isNull()) {
+        qWarning() << "Heightmap null reçue pour material_index" << material_index;
+        return;
+    }
+
+    QImage scaledImage = hm.scaled(250, 250, Qt::KeepAspectRatio, Qt::SmoothTransformation);
+
     switch (material_index) {
     case 0:
-        sandImage = hm.scaled(250, 250, Qt::KeepAspectRatio);
-        sand_h->setPixmap(QPixmap::fromImage(sandImage));
+        sandImage = hm;
+        if (sand_h) {
+            sand_h->setPixmap(QPixmap::fromImage(scaledImage));
+        }
         break;
     case 1:
-        waterImage = hm.scaled(250, 250, Qt::KeepAspectRatio);
-        water_h->setPixmap(QPixmap::fromImage(hm.scaled(250, 250, Qt::KeepAspectRatio)));
+        waterImage = hm;
+        if (water_h) {
+            water_h->setPixmap(QPixmap::fromImage(scaledImage));
+        }
         break;
     case 2:
-        lavaImage = hm.scaled(250, 250, Qt::KeepAspectRatio);
-        lava_h->setPixmap(QPixmap::fromImage(hm.scaled(250, 250, Qt::KeepAspectRatio)));
+        lavaImage = hm;
+        if (lava_h) {
+            lava_h->setPixmap(QPixmap::fromImage(scaledImage));
+        }
         break;
     default:
+        qWarning() << "Index de material invalide:" << material_index;
         break;
     }
 }

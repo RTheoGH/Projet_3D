@@ -543,7 +543,8 @@ void MainWindow::infos()
         "<li><b>Ctrl+Z:</b> Annuler la dernière action</li>"
         "</ul>"
         "<hr>"
-        "<p><i>Développé avec Qt et OpenGL</i></p>";
+        "<p><i>Développé avec Qt et OpenGL</i></p>"
+        "<p>© VIGUIER Killian & REYNIER Théo</p>";
 
     aboutBox.setText(infoText);
     aboutBox.setStandardButtons(QMessageBox::Ok);

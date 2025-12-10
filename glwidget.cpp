@@ -284,11 +284,11 @@ void GLWidget::initializeGL()
 }
 
 void GLWidget::timerEvent(QTimerEvent*){
-    int mesh_index = 0;
-    for(auto &mesh : scene_meshes){
-        emit HeightmapChanged(mesh_index, mesh->heightmapImage);
-        mesh_index++;
-    }
+    // int mesh_index = 0;
+    // for(auto &mesh : scene_meshes){
+    //     emit HeightmapChanged(mesh_index, mesh->heightmapImage);
+    //     mesh_index++;
+    // }
 
     update();
 }
@@ -302,6 +302,13 @@ void GLWidget::timerEvent(QTimerEvent*){
 
 void GLWidget::paintGL()
 {
+
+    static int paintCount = 0;
+    if (paintCount < 5) {  // Log seulement les 5 premiers renders
+        qDebug() << "=== paintGL #" << paintCount << "===";
+    }
+    paintCount++;
+
     glClear(GL_COLOR_BUFFER_BIT | GL_DEPTH_BUFFER_BIT);
     glEnable(GL_DEPTH_TEST);
 
@@ -704,22 +711,25 @@ void GLWidget::setActiveMesh(int index)
 
 void GLWidget::addMesh(std::unique_ptr<Mesh> mesh, bool perlin)
 {
-    if (!mesh || !mesh->valid) return;
+
+    if (!mesh || !mesh->valid) {
+        qDebug() << "Mesh invalide, retour";
+        return;
+    }
 
     makeCurrent();
     initializeOpenGLFunctions();
+
     mesh->bindBuffers();
 
     scene_meshes.push_back(std::move(mesh));
     Mesh* mptr = scene_meshes.back().get();
 
-    // // AUTO : si le mesh veut une heightmap et qu’elle n’est pas encore créée
     if (mptr->has_heightmap && mptr->heightmapA == nullptr && mptr->heightmapB == nullptr) {
 
         QImage img;
 
         if(!perlin){
-            // img = QImage(":/textures/heightmap.png");
             img = QImage(512, 512, QImage::Format_Grayscale8);
             img.fill(0);
         } else {
@@ -727,51 +737,48 @@ void GLWidget::addMesh(std::unique_ptr<Mesh> mesh, bool perlin)
         }
 
         if (img.isNull()) {
-            qWarning() << "heightmap image is null!";
+            qWarning() << "heightmap image is null";
         } else {
 
             mptr->heightmapImage = img.convertToFormat(QImage::Format_Grayscale8);
-            // mptr->heightmap = new QOpenGLTexture(img);
 
             mptr->heightmapA = new QOpenGLTexture(QOpenGLTexture::Target2D);
-
             mptr->heightmapA->setSize(mptr->heightmapImage.width(), mptr->heightmapImage.height());
             mptr->heightmapA->setFormat(QOpenGLTexture::R8_UNorm);
             mptr->heightmapA->setMagnificationFilter(QOpenGLTexture::Linear);
             mptr->heightmapA->setMinificationFilter(QOpenGLTexture::Linear);
             mptr->heightmapA->setWrapMode(QOpenGLTexture::ClampToEdge);
+
             mptr->heightmapA->allocateStorage();
+
             mptr->heightmapA->setData(QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::UInt8, mptr->heightmapImage.constBits());
 
-
             mptr->heightmapB = new QOpenGLTexture(QOpenGLTexture::Target2D);
-
             mptr->heightmapB->setSize(mptr->heightmapImage.width(), mptr->heightmapImage.height());
             mptr->heightmapB->setFormat(QOpenGLTexture::R8_UNorm);
             mptr->heightmapB->setMagnificationFilter(QOpenGLTexture::Linear);
             mptr->heightmapB->setMinificationFilter(QOpenGLTexture::Linear);
             mptr->heightmapB->setWrapMode(QOpenGLTexture::ClampToEdge);
+
             mptr->heightmapB->allocateStorage();
             mptr->heightmapB->setData(QOpenGLTexture::PixelFormat::Red, QOpenGLTexture::PixelType::UInt8, mptr->heightmapImage.constBits());
+
+            int mesh_index = scene_meshes.size() - 1;
+            emit HeightmapChanged(mesh_index, mptr->heightmapImage);
         }
     }
 
     if (!mptr->textureAlbedo.isNull())
     {
         mptr->albedo = new QOpenGLTexture(mptr->textureAlbedo);
-
         mptr->albedo->setAutoMipMapGenerationEnabled(true);
         mptr->albedo->generateMipMaps();
-
         mptr->albedo->setMinificationFilter(QOpenGLTexture::LinearMipMapLinear);
         mptr->albedo->setMagnificationFilter(QOpenGLTexture::Linear);
-
         mptr->albedo->setWrapMode(QOpenGLTexture::ClampToEdge);
+    }else{
+        qDebug() << "Pas d'albedo";
     }
-    else{
-        qDebug() << "nn y a pas";
-    }
-
 
     doneCurrent();
     update();
@@ -804,22 +811,55 @@ void GLWidget::onHeightmapsChanged(QImage hm_sand, QImage hm_water, QImage hm_la
         update();
     }
 }
-
-void GLWidget::onHeightmapChanged(int hm_index, QImage hm){
+void GLWidget::onHeightmapChanged(int hm_index, QImage hm)
+{
     if(scene_meshes.size() <= hm_index){
         qDebug() << "Ajoutez d'abord un terrain";
         return;
-    } else {
-
-        QOpenGLTexture* texToUpdate = scene_meshes[hm_index]->isInputA ? scene_meshes[hm_index]->heightmapA : scene_meshes[hm_index]->heightmapB;
-
-        scene_meshes[hm_index]->heightmapImage = hm;
-        glBindTexture(GL_TEXTURE_2D,texToUpdate->textureId());
-        glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, hm.width(), hm.height(), GL_RED, GL_UNSIGNED_BYTE, scene_meshes[hm_index]->heightmapImage.constBits());
-        emit HeightmapChanged(hm_index, scene_meshes[hm_index]->heightmapImage);
-
-        update();
     }
+
+    if (hm.isNull()) {
+        qDebug() << "Image null reçue";
+        return;
+    }
+
+    makeCurrent();
+
+    Mesh* mesh = scene_meshes[hm_index].get();
+    if (!mesh || !mesh->heightmapA || !mesh->heightmapB) {
+        qDebug() << "Mesh ou textures invalides";
+        doneCurrent();
+        return;
+    }
+
+    QOpenGLTexture* texToUpdate = mesh->isInputA ? mesh->heightmapA : mesh->heightmapB;
+
+    if (hm.width() != mesh->heightmapImage.width() ||
+        hm.height() != mesh->heightmapImage.height()) {
+        qDebug() << "ERREUR : Dimensions incompatibles!"
+                 << "Attendu:" << mesh->heightmapImage.width() << "x" << mesh->heightmapImage.height()
+                 << "Reçu:" << hm.width() << "x" << hm.height();
+        doneCurrent();
+        return;
+    }
+
+    QImage finalImage = hm.convertToFormat(QImage::Format_Grayscale8);
+    mesh->heightmapImage = finalImage;
+
+    glBindTexture(GL_TEXTURE_2D, texToUpdate->textureId());
+    glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
+    glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0,
+                    finalImage.width(), finalImage.height(),
+                    GL_RED, GL_UNSIGNED_BYTE,
+                    finalImage.constBits());
+
+    GLenum err = glGetError();
+    if (err != GL_NO_ERROR) {
+        qDebug() << "OpenGL Error après upload:" << err;
+    }
+
+    doneCurrent();
+    update();
 }
 
 void GLWidget::pushUndoState(int meshIndex)
