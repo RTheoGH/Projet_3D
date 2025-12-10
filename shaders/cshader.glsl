@@ -7,6 +7,9 @@ layout(binding = 1, r8) writeonly uniform image2D outputImage;
 layout(binding = 2, r8) readonly uniform image2D sand_hm;
 layout(binding = 3, r8) readonly uniform image2D water_hm;
 layout(binding = 4, r8) readonly uniform image2D lava_hm;
+layout(binding = 5, rgba32f) readonly uniform image2D water_velo_in;
+layout(binding = 6, rgba32f) writeonly uniform image2D water_velo_out;
+
 uniform int hm_index;
 uniform float moy_pix;
 
@@ -57,11 +60,12 @@ void main() {
 
     }
 
-    if(hm_index == 1){
-
+    if (hm_index == 1)
+    {
         new_val = 0.7 * c + 0.3 * moy_pix;
-        // new_val = (c + h + b + g + d + hg + hd + bg + bd) / 9.0;
+
     }
+
 
     if(hm_index == 2){
         float avg = (c + h + b + g + d + hg + hd + bg + bd) / 9.0;

@@ -179,13 +179,15 @@ void Window::mouseDrawOnLabel(QMouseEvent *event, QLabel* label, QImage &img, in
         }
     }
 
-    emit onPixmapChanged(label_index, img);
+    // emit onPixmapChanged(label_index, img);
     label->setPixmap(QPixmap::fromImage(img));
     qDebug() << "fin du draw on label";
 }
 
 bool Window::eventFilter(QObject *obj, QEvent *event)
 {
+    if(obj == nullptr) return false;
+
     if (event->type() == QEvent::MouseButtonPress ||
         event->type() == QEvent::MouseMove) {
 

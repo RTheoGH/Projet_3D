@@ -147,6 +147,9 @@ private:
     GLint textureUniform = -1;
 
     std::vector<std::unique_ptr<Mesh>> scene_meshes;
+    QOpenGLTexture* water_velocityA = nullptr;
+    QOpenGLTexture* water_velocityB = nullptr;
+    std::vector<float> water_velo_data;
 
     float m_tx = 0.0f;
     float m_ty = 0.0f;
