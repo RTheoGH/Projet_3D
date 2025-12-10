@@ -63,8 +63,41 @@ void main() {
 
     if (hm_index == 1)
     {
-        new_val = 0.7 * c + 0.3 * moy_pix;
+        // float dt = 0.001;
+        // float gr = 9.81;
+        // // dérivées du terrain d'eau
+        // float dX = (d - g) * 0.5;
+        // float dY = (b - h) * 0.5;
+        // // vitesse
+        // vec2 vel = imageLoad(water_velo_in, p).xy;
+        // vel.x -= dt * gr * dX;
+        // vel.y -= dt * gr * dY;
+        // // flux = vitesse * hauteur
+        // float flux_xp = imageLoad(water_velo_in, ivec2(xp,y)).x *
+        //                 imageLoad(inputImage, ivec2(xp,y)).r;
+        // float flux_xm = imageLoad(water_velo_in, ivec2(xm,y)).x *
+        //                 imageLoad(inputImage, ivec2(xm,y)).r;
+        // float flux_yp = imageLoad(water_velo_in, ivec2(x,yp)).y *
+        //                 imageLoad(inputImage, ivec2(x,yp)).r;
+        // float flux_ym = imageLoad(water_velo_in, ivec2(x,ym)).y *
+        //                 imageLoad(inputImage, ivec2(x,ym)).r;
+        // float d_flux_x = (flux_xp - flux_xm) * 0.5;
+        // float d_flux_y = (flux_yp - flux_ym) * 0.5;
+        // d_flux_x *= 100.0;
+        // d_flux_y *= 100.0;
+        // // conservation de masse
+        // float new_h = c - dt * (d_flux_x + d_flux_y);
+        // new_val = max(new_h, 0.0);
+        // imageStore(water_velo_out, p, vec4(vel,0,0));
 
+        new_val = max(c, max(d, max(g, max(h, b))));
+
+        if(new_val < imageLoad(sand_hm, ivec2(x, y)).r || new_val < imageLoad(lava_hm, ivec2(x, y)).r)
+            new_val = c;
+        // new_val -= 0.01;
+        // if(new_val == c){
+        //     // new_val -= 0.01;
+        // }
     }
 
 
