@@ -3,6 +3,7 @@
 
 #pragma once
 #include <QDialog>
+#include <QDoubleSpinBox>
 
 class QComboBox;
 class QDialogButtonBox;
@@ -17,10 +18,14 @@ public:
 
     int meshSize() const;
     bool usePerlinNoise() const;
+    int octaves() const;
+    double frequency() const;
 
 private:
     QComboBox *sizeBox;
     QCheckBox *m_perlin;
+    QSpinBox *m_octaves;
+    QDoubleSpinBox *m_frequency;
 };
 
 

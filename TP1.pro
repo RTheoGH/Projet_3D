@@ -22,6 +22,8 @@ RESOURCES += \
     textures.qrc \
     shaders.qrc
 
+win32:RC_ICONS = icons/sand.ico
+
 QT           += widgets \
                 core gui opengl
 

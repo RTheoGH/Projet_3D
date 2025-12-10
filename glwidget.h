@@ -80,6 +80,10 @@ public:
     QSize minimumSizeHint() const override;
     QSize sizeHint() const override;
     const std::vector<std::unique_ptr<Mesh>>& get_scene_meshes() const;
+    void clearSceneMeshes(){
+        scene_meshes.clear();
+    }
+    void clearAllMeshes();
 
 public slots:
     //Completer : ajouter des slots pour signaler appliquer le changement de rotation
@@ -96,6 +100,11 @@ public slots:
     void setBrushShapeSquare() { m_brushShape = "Square"; }
     void setBrushShapeCircle() { m_brushShape = "Circle"; }
     void timerEvent(QTimerEvent*) override;
+
+    void pushUndoState(int meshIndex);
+    void undoLastDraw();
+
+    void setErosionEnabled(bool enabled);
 
 signals:
 
@@ -150,6 +159,12 @@ private:
     QOpenGLTexture* water_velocityA = nullptr;
     QOpenGLTexture* water_velocityB = nullptr;
     std::vector<float> water_velo_data;
+    
+    struct UndoEntry {
+        int meshIndex;
+        QImage previousImage;
+    };
+    std::vector<UndoEntry> undoStack;
 
     float m_tx = 0.0f;
     float m_ty = 0.0f;
@@ -166,6 +181,10 @@ private:
     QString m_brushShape = "Square";
     QVector3D m_brushPreviewPos;
     bool m_showBrushPreview = false;
+
+    bool m_erosionEnabled = true;
+
+    QOpenGLTexture* m_grassTexture = nullptr;
 };
 
 #endif

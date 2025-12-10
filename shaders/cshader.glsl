@@ -12,6 +12,7 @@ layout(binding = 6, rgba32f) writeonly uniform image2D water_velo_out;
 
 uniform int hm_index;
 uniform float moy_pix;
+uniform int erosionEnabled;
 
 void main() {
 
@@ -53,7 +54,7 @@ void main() {
 
         new_val = min(c, avg);
 
-        if(water_c > c){
+        if(water_c > c && erosionEnabled == 1){
 //            new_val += 0.01 * moy_pix;
             new_val -= 0.001;
         }

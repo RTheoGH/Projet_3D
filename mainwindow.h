@@ -64,6 +64,11 @@ signals:
     void InitHeightmaps(int material_index, QImage hm);
     void SceneLoaded(QImage hm_sand, QImage hm_water, QImage hm_lava);
 
+private:
+    QAction *sandAction;
+    QAction *waterAction;
+    QAction *dirtAction;
+
 private slots:
     void onAddNew();
     void loadMesh();
@@ -71,7 +76,7 @@ private slots:
     void saveFile();
     void infos();
     void openMeshDialog();
-    QImage loadPerlinNoiseImage();
+    QImage loadPerlinNoiseImage(int octaves = 5, double frequency = 0.005);
     void saveTerrainBinary();
     void loadTerrainBinary();
 };
