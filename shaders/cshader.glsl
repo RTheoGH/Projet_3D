@@ -90,10 +90,14 @@ void main() {
         // new_val = max(new_h, 0.0);
         // imageStore(water_velo_out, p, vec4(vel,0,0));
 
-        new_val = max(c, max(d, max(g, max(h, b))));
+        if(erosionEnabled == 1){
 
-        if(new_val < imageLoad(sand_hm, ivec2(x, y)).r || new_val < imageLoad(lava_hm, ivec2(x, y)).r)
-            new_val = c;
+            new_val = max(c, max(d, max(g, max(h, b))));
+
+            if(new_val < imageLoad(sand_hm, ivec2(x, y)).r || new_val < imageLoad(lava_hm, ivec2(x, y)).r)
+                new_val = c;
+
+        }
         // new_val -= 0.01;
         // if(new_val == c){
         //     // new_val -= 0.01;
