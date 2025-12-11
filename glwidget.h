@@ -130,6 +130,9 @@ protected:
         const QVector3D &v0, const QVector3D &v1, const QVector3D &v2,
         float &t, float &u, float &v);
     void drawBrushPreview();
+    std::pair<bool, QVector3D> raycastGPU(const QVector3D &rayOrigin, const QVector3D &rayDir, int meshIndex);
+    std::pair<bool, QVector3D> get_ray_collision(QMouseEvent *event);
+
 private:
     // void setupVertexAttribs();
 
@@ -141,6 +144,8 @@ private:
     QOpenGLVertexArrayObject m_vao;
     QOpenGLShaderProgram *m_program;
     QOpenGLShaderProgram *m_compute = nullptr;
+    QOpenGLShaderProgram* m_raycastProgram = nullptr;
+    GLuint m_raycastSSBO = 0;
     QOpenGLContext *m_context = nullptr;
     QOpenGLFunctions_4_3_Core *f = nullptr;
     bool runCompute = true;

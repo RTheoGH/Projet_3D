@@ -194,6 +194,8 @@ void GLWidget::initializeGL()
 
     m_program = new QOpenGLShaderProgram(this);
     m_compute = new QOpenGLShaderProgram(this);
+    m_raycastProgram = new QOpenGLShaderProgram(this);
+
     if (!m_program->addShaderFromSourceFile(QOpenGLShader::Vertex, ":/shaders/vshader.glsl"))
         close();
 
@@ -202,6 +204,11 @@ void GLWidget::initializeGL()
 
     if (!m_compute->addShaderFromSourceFile(QOpenGLShader::Compute, ":/shaders/cshader.glsl"))
         close();
+
+
+    if (!m_raycastProgram->addShaderFromSourceFile(QOpenGLShader::Compute, ":/shaders/compute_raycast.glsl")) {
+        qWarning() << "Impossible de charger le compute du raycast";
+    }
 
     m_program->bindAttributeLocation("vertex", 0);
     m_program->bindAttributeLocation("normal", 1);
@@ -214,6 +221,9 @@ void GLWidget::initializeGL()
         qDebug() << "marche pas le compute ff";
         close();
     }
+
+    if (!m_raycastProgram->link())
+        qWarning() << "Impossible de linker raycast program";
 
     if (!m_program->bind())
         close();
@@ -255,6 +265,12 @@ void GLWidget::initializeGL()
     m_model_matrix_loc = m_program->uniformLocation("model_matrix");
     m_normal_matrix_loc = m_program->uniformLocation("normal_matrix");
     m_light_pos_loc = m_program->uniformLocation("light_position");
+
+    f->glGenBuffers(1, &m_raycastSSBO);
+    f->glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_raycastSSBO);
+    f->glBufferData(GL_SHADER_STORAGE_BUFFER, sizeof(float)*4, nullptr, GL_DYNAMIC_READ);
+    f->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, m_raycastSSBO);
+    f->glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
 
     m_vao.create();
     QOpenGLVertexArrayObject::Binder vaoBinder(&m_vao);
@@ -459,6 +475,7 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
 {
     // On stocke la position uniquement pour le dessin ou la rotation
     bool ctrlPressed = event->modifiers() & Qt::ControlModifier;
+    std::pair<bool, QVector3D> ray_collision;
 
     if (ctrlPressed && event->buttons() & Qt::LeftButton) {
         // Rotation : on initialise la dernière position pour la rotation
@@ -466,25 +483,50 @@ void GLWidget::mousePressEvent(QMouseEvent *event)
     } else if (!(ctrlPressed) && event->buttons() & Qt::LeftButton) {
         // Dessin
         m_drawing = true;
-        QVector3D pointOnPlane = screenPosToPlane(event->pos());
+
+        ray_collision = get_ray_collision(event);
 
         qDebug() << "[MOUSE] pos écran =" << event->pos()
-                 << " -> pos monde =" << pointOnPlane;
+                 << " -> pos monde =" << ray_collision.second;
 
-        if (!pointOnPlane.isNull()) {
-            drawOnHeightmap(pointOnPlane, false);
+        if (ray_collision.first) {
+            drawOnHeightmap(ray_collision.second, false);
         }
     } else if (!(ctrlPressed) && event->buttons() & Qt::RightButton) {
         // Dessin
         m_drawing = true;
-        QVector3D pointOnPlane = screenPosToPlane(event->pos());
-        drawOnHeightmap(pointOnPlane, true);
+        drawOnHeightmap(ray_collision.second, true);
     }
+}
+
+std::pair<bool, QVector3D> GLWidget::get_ray_collision(QMouseEvent *event){
+    // 1️ Calculer le rayon depuis l'écran
+    float nx = 2.0f * event->pos().x() / width() - 1.0f;
+    float ny = 1.0f - 2.0f * event->pos().y() / height();
+
+    QVector4D ray_clip(nx, ny, -1.0f, 1.0f);
+    QVector4D ray_eye = m_projection.inverted() * ray_clip;
+    ray_eye.setZ(-1.0f);
+    ray_eye.setW(0.0f);
+
+    QMatrix4x4 view = m_view;
+    view.rotate(m_xRot / 16.0f, 1,0,0);
+    view.rotate(m_yRot / 16.0f, 0,1,0);
+    view.rotate(m_zRot / 16.0f, 0,0,1);
+
+    QVector4D ray_world4 = view.inverted() * ray_eye;
+    QVector3D ray_world(ray_world4.x(), ray_world4.y(), ray_world4.z());
+    ray_world.normalize();
+
+    QVector3D cam_pos = (view.inverted() * QVector4D(0,0,0,1)).toVector3D();
+
+    return raycastGPU(cam_pos, ray_world, activeMeshIndex);
 }
 
 void GLWidget::mouseMoveEvent(QMouseEvent *event)
 {
     bool ctrlPressed = event->modifiers() & Qt::ControlModifier;
+    std::pair<bool, QVector3D> ray_collision;
 
     if (ctrlPressed && (event->buttons() & Qt::LeftButton)) {
         // Rotation
@@ -509,21 +551,51 @@ void GLWidget::mouseMoveEvent(QMouseEvent *event)
         m_last_rot_position = event->pos();
         update();
     }
+
+    else if(m_drawing && (event->buttons() & Qt::LeftButton || event->buttons() & Qt::RightButton)){
+
+        if (scene_meshes.empty()) return;
+
+        // 1️ Calculer le rayon depuis l'écran
+        float nx = 2.0f * event->pos().x() / width() - 1.0f;
+        float ny = 1.0f - 2.0f * event->pos().y() / height();
+
+        QVector4D ray_clip(nx, ny, -1.0f, 1.0f);
+        QVector4D ray_eye = m_projection.inverted() * ray_clip;
+        ray_eye.setZ(-1.0f);
+        ray_eye.setW(0.0f);
+
+        QMatrix4x4 view = m_view;
+        view.rotate(m_xRot / 16.0f, 1,0,0);
+        view.rotate(m_yRot / 16.0f, 0,1,0);
+        view.rotate(m_zRot / 16.0f, 0,0,1);
+
+        QVector4D ray_world4 = view.inverted() * ray_eye;
+        QVector3D ray_world(ray_world4.x(), ray_world4.y(), ray_world4.z());
+        ray_world.normalize();
+
+        QVector3D cam_pos = (view.inverted() * QVector4D(0,0,0,1)).toVector3D();
+
+        ray_collision = raycastGPU(cam_pos, ray_world, activeMeshIndex);
+        if (ray_collision.first) {
+            qDebug() << "[RAY] hit at" << ray_collision.second;
+            drawOnHeightmap(ray_collision.second, false);
+        } else {
+            qDebug() << "[RAY] no hit";
+        }
+    }
+
     else if (m_drawing && (event->buttons() & Qt::LeftButton)) {
-        // Dessin
-        QVector3D pointOnPlane = screenPosToPlane(event->pos());
-        if (!pointOnPlane.isNull()) {
-            drawOnHeightmap(pointOnPlane, false);
+        if (!ray_collision.first) {
+            drawOnHeightmap(ray_collision.second, false);
         }
     }
     else if (m_drawing && (event->buttons() & Qt::RightButton)) {
-        // Dessin
-        QVector3D pointOnPlane = screenPosToPlane(event->pos());
-        drawOnHeightmap(pointOnPlane, true);
+
+        drawOnHeightmap(ray_collision.second, true);
     }
 
-    QVector3D p = screenPosToPlane(event->pos());
-    m_brushPreviewPos = p;
+    m_brushPreviewPos = ray_collision.second;
     m_showBrushPreview = true;
     update();
 }
@@ -543,71 +615,65 @@ void GLWidget::wheelEvent(QWheelEvent *event){
 
 #include <limits>
 
-QVector3D GLWidget::screenPosToPlane(const QPoint &pos)
+// retourne (hit, position). si no hit, hit=false
+std::pair<bool, QVector3D> GLWidget::raycastGPU(const QVector3D &rayOrigin, const QVector3D &rayDir, int meshIndex)
 {
-    if (scene_meshes.empty()) return QVector3D();
+    if (meshIndex < 0 || meshIndex >= (int)scene_meshes.size()) return {false, QVector3D()};
 
-    // 1️ Calculer le rayon depuis l'écran
-    float nx = 2.0f * pos.x() / width() - 1.0f;
-    float ny = 1.0f - 2.0f * pos.y() / height();
+    makeCurrent();
 
-    QVector4D ray_clip(nx, ny, -1.0f, 1.0f);
-    QVector4D ray_eye = m_projection.inverted() * ray_clip;
-    ray_eye.setZ(-1.0f);
-    ray_eye.setW(0.0f);
+    // choisir la heightmap (la texture "read" actuelle pour le mesh donné)
+    Mesh* mesh = scene_meshes[meshIndex].get();
+    if (!mesh || !mesh->heightmapA || !mesh->heightmapB) return {false, QVector3D()};
+    QOpenGLTexture* hmTex = mesh->isInputA ? mesh->heightmapA : mesh->heightmapB;
 
-    QMatrix4x4 view = m_view;
-    view.rotate(m_xRot / 16.0f, 1,0,0);
-    view.rotate(m_yRot / 16.0f, 0,1,0);
-    view.rotate(m_zRot / 16.0f, 0,0,1);
+    // bind program
+    m_raycastProgram->bind();
 
-    QVector4D ray_world4 = view.inverted() * ray_eye;
-    QVector3D ray_world(ray_world4.x(), ray_world4.y(), ray_world4.z());
-    ray_world.normalize();
+    // bind heightmap as image unit 0 (r8)
+    f->glBindImageTexture(0, hmTex->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
 
-    QVector3D cam_pos = (view.inverted() * QVector4D(0,0,0,1)).toVector3D();
+    // bind SSBO (already bound to 7 in initializeGL but rebind to be safe)
+    f->glBindBufferBase(GL_SHADER_STORAGE_BUFFER, 7, m_raycastSSBO);
 
-    // Parcourir les triangles du mesh pour trouver intersection
-    Mesh* mesh = nullptr;
-    for (auto &m : scene_meshes) {
-        if (m->has_heightmap) {
-            mesh = m.get();
-            break;
-        }
+    // set uniforms
+    int loc;
+    loc = m_raycastProgram->uniformLocation("rayOrigin");
+    if (loc >= 0) m_raycastProgram->setUniformValue(loc, QVector3D(rayOrigin));
+    loc = m_raycastProgram->uniformLocation("rayDir");
+    if (loc >= 0) m_raycastProgram->setUniformValue(loc, QVector3D(rayDir));
+    loc = m_raycastProgram->uniformLocation("terrainSize");
+    if (loc >= 0) m_raycastProgram->setUniformValue(loc, QVector2D(10.0f, 10.0f));
+    loc = m_raycastProgram->uniformLocation("resolution");
+    if (loc >= 0) m_raycastProgram->setUniformValue(loc, QSize(mesh->heightmapImage.width(), mesh->heightmapImage.height()));
+    loc = m_raycastProgram->uniformLocation("tMax");
+    if (loc >= 0) m_raycastProgram->setUniformValue(loc, 200.0f);
+    loc = m_raycastProgram->uniformLocation("step");
+    if (loc >= 0) m_raycastProgram->setUniformValue(loc, 0.05f);
+    loc = m_raycastProgram->uniformLocation("refineIters");
+    if (loc >= 0) m_raycastProgram->setUniformValue(loc, 10);
+
+    // dispatch single workgroup
+    f->glDispatchCompute(1, 1, 1);
+    f->glMemoryBarrier(GL_SHADER_STORAGE_BARRIER_BIT | GL_BUFFER_UPDATE_BARRIER_BIT);
+
+    // read back SSBO
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, m_raycastSSBO);
+    float data[4] = {0,0,0,0};
+    f->glGetBufferSubData(GL_SHADER_STORAGE_BUFFER, 0, sizeof(data), data);
+    glBindBuffer(GL_SHADER_STORAGE_BUFFER, 0);
+
+    m_raycastProgram->release();
+    doneCurrent();
+
+    if (data[3] >= 0.5f) {
+        return { true, QVector3D(data[0], data[1], data[2]) };
+    } else {
+        return { false, QVector3D() };
     }
-    if (!mesh) return QVector3D();
-
-    QVector3D closest_point;
-    float closest_t = std::numeric_limits<float>::max();
-
-    // Pour chaque triangle
-    for (size_t i = 0; i + 2 < mesh->triangles.size(); i += 3) {
-        QVector3D v0 = mesh->vertices[mesh->triangles[i]];
-        QVector3D v1 = mesh->vertices[mesh->triangles[i+1]];
-        QVector3D v2 = mesh->vertices[mesh->triangles[i+2]];
-
-        float t, u, v;
-        if (rayIntersectsTriangle(cam_pos, ray_world, v0, v1, v2, t, u, v)) {
-            if (t < closest_t) {
-                closest_t = t;
-                closest_point = cam_pos + t * ray_world;
-            }
-        }
-    }
-
-    // float halfX = 10.0f / 2.0f; // sizeX
-    // float halfZ = 10.0f / 2.0f; // sizeZ
-    // if (closest_t == std::numeric_limits<float>::max()) {
-    //     closest_point.setX(qBound(-halfX, cam_pos.x() + ray_world.x() * 10.0f, halfX));
-    //     closest_point.setZ(qBound(-halfZ, cam_pos.z() + ray_world.z() * 10.0f, halfZ));
-    //     closest_point.setY(0.0f);
-    // }
-    if (closest_t == std::numeric_limits<float>::max()) {
-        return QVector3D();
-    }
-
-    return closest_point;
 }
+
+
 
 // Fonction de test intersection rayon-triangle
 bool GLWidget::rayIntersectsTriangle(
@@ -644,6 +710,8 @@ bool GLWidget::rayIntersectsTriangle(
 void GLWidget::drawOnHeightmap(const QVector3D &point, bool invert)
 {
     if (scene_meshes.empty()) return;
+
+    makeCurrent();
 
     pushUndoState(activeMeshIndex);
 
@@ -696,6 +764,11 @@ void GLWidget::drawOnHeightmap(const QVector3D &point, bool invert)
     }
     QOpenGLTexture* texToUpdate = mesh->isInputA ? mesh->heightmapA : mesh->heightmapB;
 
+    qDebug() << "upload texId=" << texToUpdate->textureId()
+             << " size=" << img.width() << "x" << img.height()
+             << " format=" << texToUpdate->format();
+
+
     glBindTexture(GL_TEXTURE_2D, texToUpdate->textureId());
     glPixelStorei(GL_UNPACK_ALIGNMENT, 1);
     glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, img.width(), img.height(),
@@ -705,6 +778,7 @@ void GLWidget::drawOnHeightmap(const QVector3D &point, bool invert)
 
 
     emit HeightmapChanged(activeMeshIndex, mesh->heightmapImage);
+    doneCurrent();
     update();
 }
 
