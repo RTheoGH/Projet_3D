@@ -12,7 +12,7 @@ layout(binding = 6, rgba32f) writeonly uniform image2D water_velo_out;
 
 uniform int hm_index;
 uniform float moy_pix;
-uniform int erosionEnabled;
+uniform int simulationEnabled;
 
 void main() {
 
@@ -54,7 +54,7 @@ void main() {
 
         new_val = min(c, avg);
 
-        if(water_c > c && erosionEnabled == 1){
+        if(water_c > c && simulationEnabled == 1){
 //            new_val += 0.01 * moy_pix;
             new_val -= 0.001;
         }
@@ -90,7 +90,7 @@ void main() {
         // new_val = max(new_h, 0.0);
         // imageStore(water_velo_out, p, vec4(vel,0,0));
 
-        if(erosionEnabled == 1){
+        if(simulationEnabled == 1){
 
             new_val = max(c, max(d, max(g, max(h, b))));
 

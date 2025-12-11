@@ -52,6 +52,7 @@
 #define MAINWINDOW_H
 
 #include <QMainWindow>
+#include <QCheckBox>
 
 class MainWindow : public QMainWindow
 {
@@ -69,6 +70,9 @@ private:
     QAction *waterAction;
     QAction *dirtAction;
 
+    QCheckBox *simulationCheckBox;
+
+
 private slots:
     void onAddNew();
     void loadMesh();
@@ -76,7 +80,7 @@ private slots:
     void saveFile();
     void infos();
     void openMeshDialog();
-    QImage loadPerlinNoiseImage(int octaves = 5, double frequency = 0.005);
+    QImage loadPerlinNoiseImage(int octaves = 5, double frequency = 0.02, int seed = 40);
     void saveTerrainBinary();
     void loadTerrainBinary();
 };

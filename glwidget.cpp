@@ -368,7 +368,7 @@ void GLWidget::paintGL()
             moy_pix /= 255;
             m_compute->setUniformValue(m_compute->uniformLocation("moy_pix"), moy_pix);
 
-            m_compute->setUniformValue(m_compute->uniformLocation("erosionEnabled"), m_erosionEnabled ? 1 : 0);
+            m_compute->setUniformValue(m_compute->uniformLocation("simulationEnabled"), m_simulationEnabled ? 1 : 0);
 
             int gx = (mptr->heightmapImage.width() + 15) / 16;
             int gy = (mptr->heightmapImage.height() + 15) / 16;
@@ -930,9 +930,9 @@ void GLWidget::clearAllMeshes()
     update();
 }
 
-void GLWidget::setErosionEnabled(bool enabled)
+void GLWidget::setSimulationEnabled(bool enabled)
 {
-    m_erosionEnabled = enabled;
+    m_simulationEnabled = enabled;
     update();
 }
 
