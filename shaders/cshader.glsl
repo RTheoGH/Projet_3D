@@ -68,55 +68,37 @@ void main() {
 
         if(simulationEnabled == 1){
 
-            new_val = 0.7 * c + 0.3 * moy_pix;
-        //     new_val = max(c, max(d, max(g, max(h, b))));
+            // new_val = 0.7 * c + 0.3 * moy_pix;
+            new_val = max(c, max(d, max(g, max(h, b))));
 
-        //     bool is_c_max = (new_val == c);
+            bool is_c_max = (new_val == c);
 
-        //     if(new_val < imageLoad(sand_hm, ivec2(x, y)).r || new_val < imageLoad(lava_hm, ivec2(x, y)).r){
+            if(new_val < imageLoad(sand_hm, ivec2(x, y)).r || new_val < imageLoad(lava_hm, ivec2(x, y)).r){
 
-        //         new_val = c;
+                new_val = c;
 
-        //     }
+            }
 
-        //     float sand_c = imageLoad(sand_hm, ivec2(x,y)).r;
+            float sand_c = imageLoad(sand_hm, ivec2(x,y)).r;
 
-        //     bool water_coming = (c < sand_c) && (new_val >= sand_c);
+            bool water_coming = (c < sand_c) && (new_val >= sand_c);
 
-        //     // érosion de vague
-        //     if (water_coming) {
+            // érosion de vague
+            if (water_coming) {
 
-        //         float sand_g = imageLoad(sand_hm, ivec2(xm,y)).r;
-        //         float sand_d = imageLoad(sand_hm, ivec2(xp,y)).r;
-        //         float sand_b = imageLoad(sand_hm, ivec2(x,ym)).r;
-        //         float sand_h = imageLoad(sand_hm, ivec2(x,yp)).r;
+                float sand_g = imageLoad(sand_hm, ivec2(xm,y)).r;
+                float sand_d = imageLoad(sand_hm, ivec2(xp,y)).r;
+                float sand_b = imageLoad(sand_hm, ivec2(x,ym)).r;
+                float sand_h = imageLoad(sand_hm, ivec2(x,yp)).r;
 
-        //         float erosion = 3.0/255.0;
+                float erosion = 3.0/255.0;
 
-        //         imageStore(sand_hm, ivec2(x, y), vec4(max(0,sand_c-erosion),0,0,1));
-        //         if(g < sand_g) imageStore(sand_hm, ivec2(xm, y), vec4(max(0,sand_g-erosion),0,0,1));
-        //         if(d < sand_d) imageStore(sand_hm, ivec2(xp, y), vec4(max(0,sand_d-erosion),0,0,1));
-        //         if(b < sand_b) imageStore(sand_hm, ivec2(x, ym), vec4(max(0,sand_b-erosion),0,0,1));
-        //         if(h < sand_h) imageStore(sand_hm, ivec2(x, yp), vec4(max(0,sand_h-erosion),0,0,1));
-        //     }
-
-        //     // if(c != 0){
-        //     //     float sand_c = imageLoad(sand_hm, ivec2(x, y)).r;
-        //     //     float sand_g = imageLoad(sand_hm, ivec2(xm, y)).r;
-        //     //     float sand_d = imageLoad(sand_hm, ivec2(xp, y)).r;
-        //     //     float sand_b = imageLoad(sand_hm, ivec2(x, ym)).r;
-        //     //     float sand_h = imageLoad(sand_hm, ivec2(x, yp)).r;
-        //     //     if(new_val < sand_c)
-        //     //         imageStore(sand_hm, ivec2(x, y), vec4(sand_c-(2.0/255.0), 0, 0, 1));
-        //     //     if(g < sand_g)
-        //     //         imageStore(sand_hm, ivec2(xm, y), vec4(sand_g-(2.0/255.0), 0, 0, 1));
-        //     //     if(d < sand_d)
-        //     //         imageStore(sand_hm, ivec2(xp, y), vec4(sand_d-(2.0/255.0), 0, 0, 1));
-        //     //     if(b < sand_b)
-        //     //         imageStore(sand_hm, ivec2(x, ym), vec4(sand_b-(2.0/255.0), 0, 0, 1));
-        //     //     if(h < sand_h)
-        //     //         imageStore(sand_hm, ivec2(x, yp), vec4(sand_h-(2.0/255.0), 0, 0, 1));
-        //     // }
+                imageStore(sand_hm, ivec2(x, y), vec4(max(0,sand_c-erosion),0,0,1));
+                if(g < sand_g) imageStore(sand_hm, ivec2(xm, y), vec4(max(0,sand_g-erosion),0,0,1));
+                if(d < sand_d) imageStore(sand_hm, ivec2(xp, y), vec4(max(0,sand_d-erosion),0,0,1));
+                if(b < sand_b) imageStore(sand_hm, ivec2(x, ym), vec4(max(0,sand_b-erosion),0,0,1));
+                if(h < sand_h) imageStore(sand_hm, ivec2(x, yp), vec4(max(0,sand_h-erosion),0,0,1));
+            }
 
         }
         // new_val -= 0.01;
