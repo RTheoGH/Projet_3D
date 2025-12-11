@@ -2,3 +2,4 @@ build
 .qtc_clangd
 TP1.pro.user
 .vscode/
+.qtcreator/
