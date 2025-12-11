@@ -284,11 +284,11 @@ void GLWidget::initializeGL()
 }
 
 void GLWidget::timerEvent(QTimerEvent*){
-    // int mesh_index = 0;
-    // for(auto &mesh : scene_meshes){
-    //     emit HeightmapChanged(mesh_index, mesh->heightmapImage);
-    //     mesh_index++;
-    // }
+    int mesh_index = 0;
+    for(auto &mesh : scene_meshes){
+        emit HeightmapChanged(mesh_index, mesh->heightmapImage);
+        mesh_index++;
+    }
 
     update();
 }
@@ -349,7 +349,7 @@ void GLWidget::paintGL()
             QOpenGLTexture* readTexWater = scene_meshes[1]->isInputA ? scene_meshes[1]->heightmapA : scene_meshes[1]->heightmapB;
             QOpenGLTexture* readTexLava  = scene_meshes[2]->isInputA ? scene_meshes[2]->heightmapA : scene_meshes[2]->heightmapB;
 
-            f->glBindImageTexture(2, readTexSand->textureId(),  0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
+            f->glBindImageTexture(2, readTexSand->textureId(),  0, GL_FALSE, 0, GL_READ_WRITE, GL_R8);
             f->glBindImageTexture(3, readTexWater->textureId(), 0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
             f->glBindImageTexture(4, readTexLava->textureId(),  0, GL_FALSE, 0, GL_READ_ONLY, GL_R8);
 
@@ -384,6 +384,14 @@ void GLWidget::paintGL()
             f->glBindTexture(GL_TEXTURE_2D, writeTex->textureId());
             f->glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, result.bits());
             mptr->heightmapImage = result;
+
+            // récupération de l'érosion du sable par l'eau
+            if(mesh_index == 1){
+                QImage sand_update(mptr->heightmapImage.size(), QImage::Format_Grayscale8);
+                f->glBindTexture(GL_TEXTURE_2D, readTexSand->textureId());
+                f->glGetTexImage(GL_TEXTURE_2D, 0, GL_RED, GL_UNSIGNED_BYTE, sand_update.bits());
+                scene_meshes[0]->heightmapImage = sand_update;
+            }
 
             water_velo_data.assign(512*512*4, 0.0f);
             f->glBindTexture(GL_TEXTURE_2D, water_velocityB->textureId());
