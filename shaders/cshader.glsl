@@ -52,7 +52,8 @@ void main() {
 
         float avg = (c + h + b + g + d + hg + hd + bg + bd) / 9.0;
 
-        new_val = min(c, avg);
+        // new_val = min(c, avg);
+        new_val = avg;
 
         if(water_c > c && simulationEnabled == 1){
 //            new_val += 0.01 * moy_pix;
