@@ -41,8 +41,8 @@ MeshDialog::MeshDialog(QWidget *parent)
     m_frequency = new QDoubleSpinBox;
     m_frequency->setRange(0.001, 1.0);
     m_frequency->setSingleStep(0.001);
-    m_frequency->setDecimals(4);
-    m_frequency->setValue(0.005);
+    m_frequency->setDecimals(3);
+    m_frequency->setValue(0.02);
     m_frequency->setEnabled(false);
     perlinLayout->addWidget(freqLabel);
     perlinLayout->addWidget(m_frequency);

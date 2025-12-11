@@ -104,7 +104,7 @@ public slots:
     void pushUndoState(int meshIndex);
     void undoLastDraw();
 
-    void setErosionEnabled(bool enabled);
+    void setSimulationEnabled(bool enabled);
 
 signals:
 
@@ -182,7 +182,7 @@ private:
     QVector3D m_brushPreviewPos;
     bool m_showBrushPreview = false;
 
-    bool m_erosionEnabled = true;
+    bool m_simulationEnabled = true;
 
     QOpenGLTexture* m_grassTexture = nullptr;
 };

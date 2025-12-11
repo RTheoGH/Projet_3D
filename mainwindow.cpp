@@ -63,6 +63,8 @@
 #include "meshdialog.h"
 #include "SimplexNoise.h"
 #include <QRgb>
+#include <QRandomGenerator>
+
 
 MainWindow::MainWindow()
 {
@@ -165,9 +167,9 @@ MainWindow::MainWindow()
     undo->setShortcut(QKeySequence::Undo);
     toolbar2->addAction(undo);
 
-    QCheckBox *erosion = new QCheckBox("Erosion");
-    erosion->setChecked(true);
-    toolbar2->addWidget(erosion);
+    simulationCheckBox = new QCheckBox("simulation");
+    simulationCheckBox->setChecked(true);
+    toolbar2->addWidget(simulationCheckBox);
 
     onAddNew();
 
@@ -192,7 +194,7 @@ MainWindow::MainWindow()
             gl->undoLastDraw();
         });
 
-        connect(erosion, &QCheckBox::toggled, gl, &GLWidget::setErosionEnabled);
+        connect(simulationCheckBox, &QCheckBox::toggled, gl, &GLWidget::setSimulationEnabled);
     }
 }
 
@@ -291,11 +293,18 @@ void MainWindow::openMeshDialog()
         int octaves = dlg.octaves();
         double frequency = dlg.frequency();
 
+        if (simulationCheckBox) {
+            simulationCheckBox->setChecked(!perlin);
+        }
+
         Window *w = qobject_cast<Window*>(centralWidget());
         if (!w)
             return;
 
         GLWidget *gl = w->get_glWidget();
+
+        gl->setSimulationEnabled(!perlin);
+
         gl->clearAllMeshes();
         gl->setActiveMesh(0);
         sandAction->setChecked(true);
@@ -305,15 +314,32 @@ void MainWindow::openMeshDialog()
         auto p3 = std::make_unique<Plane>(10, 10, size, size, ":/textures/dirt_texture.png");
 
         if(perlin){
-            QImage perlin_image = loadPerlinNoiseImage(octaves, frequency);
-            p->heightmapImage = perlin_image;
-            p2->heightmapImage = perlin_image;
-            p3->heightmapImage = perlin_image;
-            emit InitHeightmaps(0, perlin_image);
-            emit InitHeightmaps(1, perlin_image);
-            emit InitHeightmaps(2, perlin_image);
-        }
-        else{
+            int seed_sand  = QRandomGenerator::global()->generate();
+            int seed_water = QRandomGenerator::global()->generate();
+            int seed_dirt  = QRandomGenerator::global()->generate();
+
+            QImage perlin_sand  = loadPerlinNoiseImage(octaves, frequency, seed_sand);
+            QImage perlin_water = loadPerlinNoiseImage(octaves, frequency, seed_water);
+            QImage perlin_dirt  = loadPerlinNoiseImage(octaves, frequency, seed_dirt);
+
+            for(int y=0; y<perlin_water.height(); y++){
+                for(int x=0; x<perlin_water.width(); x++){
+                    QColor col = perlin_water.pixelColor(x,y);
+                    int v = col.red();
+                    v = v / 1.75;
+
+                    perlin_water.setPixel(x, y, qRgb(v, v, v));
+                }
+            }
+
+            p->heightmapImage  = perlin_sand;
+            p2->heightmapImage = perlin_water;
+            p3->heightmapImage = perlin_dirt;
+
+            emit InitHeightmaps(0, perlin_sand);
+            emit InitHeightmaps(1, perlin_water);
+            emit InitHeightmaps(2, perlin_dirt);
+        }else{
             QImage newHM = QImage(250, 250, QImage::Format_Grayscale8).scaled(250, 250, Qt::KeepAspectRatio);
             newHM.fill(0);
             emit InitHeightmaps(0, newHM);
@@ -327,12 +353,12 @@ void MainWindow::openMeshDialog()
     }
 }
 
-QImage MainWindow::loadPerlinNoiseImage(int octaves, double frequency)
+QImage MainWindow::loadPerlinNoiseImage(int octaves, double frequency, int seed)
 {
     float scale     = 1.0f / frequency;
-    float offset_x  = 0.0f; // 5.9f;
-    float offset_y  = 0.0f; // 5.1f;
-    float offset_z  = 0.0f; // 0.05f;
+    float offset_x = seed % 10000;
+    float offset_y = (seed / 10000) % 10000;
+
     float lacunarity    = 1.99f;
     float persistance   = 0.5f;
 
